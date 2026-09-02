@@ -22,6 +22,9 @@ namespace StructureGen.Data.Json
             NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString
         };
 
+        /// <summary>The name of the optional file holding standards and materials shared across section files.</summary>
+        public const string SharedDefinitionsFileName = "standards.json";
+
         private readonly ILogger _logger;
         private readonly DatabaseValidator _validator;
 
@@ -72,14 +75,64 @@ namespace StructureGen.Data.Json
                     $"You do not have permission to read the structural database file:{Environment.NewLine}{path}");
             }
 
-            return Parse(json, path);
+            return Parse(json, path, LoadSharedDefinitions(path));
+        }
+
+        /// <summary>
+        /// Loads the shared <c>standards.json</c> sitting beside a section file, when there is one.
+        /// </summary>
+        /// <param name="sectionFilePath">The section file being loaded.</param>
+        /// <returns>The shared file, or <see langword="null"/> when none exists or it is unreadable.</returns>
+        /// <remarks>
+        /// A user who splits their data across several section files should not have to repeat the
+        /// standards and materials in each. A section file that declares none of its own picks up the
+        /// shared list from the same folder; one that declares its own keeps them, so a self-contained
+        /// file stays self-contained.
+        /// </remarks>
+        private DatabaseFileDto? LoadSharedDefinitions(string sectionFilePath)
+        {
+            string? folder = Path.GetDirectoryName(Path.GetFullPath(sectionFilePath));
+            if (folder is null)
+            {
+                return null;
+            }
+
+            string sharedPath = Path.Combine(folder, SharedDefinitionsFileName);
+            if (!File.Exists(sharedPath) ||
+                string.Equals(Path.GetFullPath(sharedPath), Path.GetFullPath(sectionFilePath), StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            try
+            {
+                return JsonSerializer.Deserialize<DatabaseFileDto>(File.ReadAllText(sharedPath), Options);
+            }
+            catch (JsonException exception)
+            {
+                _logger.Warning($"The shared definitions file '{sharedPath}' is not valid JSON and was ignored: {exception.Message}");
+                return null;
+            }
+            catch (IOException exception)
+            {
+                _logger.Warning($"The shared definitions file '{sharedPath}' could not be read and was ignored: {exception.Message}");
+                return null;
+            }
+            catch (UnauthorizedAccessException exception)
+            {
+                _logger.Warning($"The shared definitions file '{sharedPath}' could not be read and was ignored: {exception.Message}");
+                return null;
+            }
         }
 
         /// <summary>Parses a database from JSON text already in memory.</summary>
         /// <param name="json">The JSON document.</param>
         /// <param name="sourcePath">The path to record as the origin of the data, for diagnostics.</param>
+        /// <param name="shared">
+        /// Standards and materials to fall back on when the file declares none of its own.
+        /// </param>
         /// <returns>The loaded database, or a failure describing why the content is unusable.</returns>
-        public Result<StructuralDatabase> Parse(string json, string sourcePath)
+        public Result<StructuralDatabase> Parse(string json, string sourcePath, DatabaseFileDto? shared = null)
         {
             DatabaseFileDto? file;
             try
@@ -126,9 +179,38 @@ namespace StructureGen.Data.Json
                     sourcePath);
             }
 
+            if (shared is not null && (file.Standards is null || file.Standards.Count == 0))
+            {
+                file.Standards = shared.Standards;
+                report.AddInfo(
+                    "Db.SharedStandards",
+                    $"This file declares no standards, so the {shared.Standards?.Count ?? 0} standard(s) from the " +
+                    $"shared '{SharedDefinitionsFileName}' in the same folder were used.",
+                    sourcePath);
+            }
+
             DatabaseMetadata metadata = BuildMetadata(file, sourcePath);
             List<StandardRecord> standards = BuildStandards(file, report);
-            List<MaterialRecord> materials = BuildMaterials(file, units, report);
+            List<MaterialRecord> materials = BuildMaterials(file.Materials, units, report);
+
+            // Shared materials carry their own numbers and must be converted with the unit block of
+            // the file that declares them, never with this file's. A section file written in inches
+            // and pounds per foot picking up a shared material declared in kilograms per cubic metre
+            // would otherwise be handed a density three orders of magnitude wrong.
+            if (materials.Count == 0 && shared is not null)
+            {
+                DatabaseUnits sharedUnits = DatabaseUnits.Parse(
+                    shared.Units?.Length, shared.Units?.UnitWeight, shared.Units?.Density, shared.Units?.PieceMass,
+                    out _);
+
+                materials = BuildMaterials(shared.Materials, sharedUnits, report);
+                report.AddInfo(
+                    "Db.SharedMaterials",
+                    $"This file declares no materials, so the {materials.Count} material(s) from the shared " +
+                    $"'{SharedDefinitionsFileName}' in the same folder were used, converted from that file's own units.",
+                    sourcePath);
+            }
+
             List<SectionRecord> sections = BuildSections(file, units, report);
 
             StructuralDatabase database = new(metadata, standards, materials, sections);
@@ -158,7 +240,7 @@ namespace StructureGen.Data.Json
                 $"Loaded structural database '{metadata.Stamp}' from '{sourcePath}': " +
                 $"{standards.Count} standard(s), {materials.Count} material(s), {sections.Count} section(s).");
 
-            return Result<StructuralDatabase>.Success(database);
+            return Result<StructuralDatabase>.Success(database, report);
         }
 
         private static DatabaseMetadata BuildMetadata(DatabaseFileDto file, string sourcePath) => new(
@@ -194,10 +276,11 @@ namespace StructureGen.Data.Json
             return standards;
         }
 
-        private static List<MaterialRecord> BuildMaterials(DatabaseFileDto file, DatabaseUnits units, ValidationReport report)
+        private static List<MaterialRecord> BuildMaterials(
+            List<MaterialDto>? dtos, DatabaseUnits units, ValidationReport report)
         {
             List<MaterialRecord> materials = new();
-            foreach (MaterialDto dto in file.Materials ?? new List<MaterialDto>())
+            foreach (MaterialDto dto in dtos ?? new List<MaterialDto>())
             {
                 if (string.IsNullOrWhiteSpace(dto.Id))
                 {

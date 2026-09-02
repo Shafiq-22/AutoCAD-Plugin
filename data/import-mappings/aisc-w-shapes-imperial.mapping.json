@@ -1,0 +1,28 @@
+{
+  "name": "AISC W shapes from an imperial spreadsheet",
+  "description": "The same mapping mechanism reading a table written in inches and pounds per foot. Only the two unit tokens differ from the metric mapping; every value is converted on import.",
+
+  "standardId": "aisc-360",
+  "category": "i-section",
+
+  "designationColumn": "AISC_Manual_Label",
+  "unitWeightColumn": "W",
+
+  "dimensions": {
+    "h": "d",
+    "b": "bf",
+    "tw": "tw",
+    "tf": "tf",
+    "A": "A"
+  },
+
+  "lengthUnit": "in",
+  "unitWeightUnit": "lb/ft",
+
+  "material": "s355jr",
+
+  "markVerified": false,
+  "provenance": "Imported from an AISC shape database export. Not yet checked against a controlled copy of the Manual.",
+
+  "blankMarkers": ["-", "--"]
+}

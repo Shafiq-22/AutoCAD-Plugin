@@ -36,8 +36,12 @@ namespace StructureGen.Core.Results
         public ValidationReport? Report { get; }
 
         /// <summary>Creates a successful result.</summary>
+        /// <param name="report">
+        /// An optional report. A successful operation may still have findings worth showing, such as
+        /// a database that loaded but contains unverified records.
+        /// </param>
         /// <returns>The result.</returns>
-        public static Result Success() => new(true, null, null, null);
+        public static Result Success(ValidationReport? report = null) => new(true, null, null, report);
 
         /// <summary>Creates a failed result.</summary>
         /// <param name="code">The stable failure code.</param>
@@ -72,8 +76,13 @@ namespace StructureGen.Core.Results
 
         /// <summary>Creates a successful result carrying <paramref name="value"/>.</summary>
         /// <param name="value">The produced value.</param>
+        /// <param name="report">
+        /// An optional report. A successful operation may still have findings worth showing, such as
+        /// a database that loaded but contains unverified records.
+        /// </param>
         /// <returns>The result.</returns>
-        public static Result<T> Success(T value) => new(true, value, null, null, null);
+        public static Result<T> Success(T value, ValidationReport? report = null) =>
+            new(true, value, null, null, report);
 
         /// <summary>Creates a failed result.</summary>
         /// <param name="code">The stable failure code.</param>

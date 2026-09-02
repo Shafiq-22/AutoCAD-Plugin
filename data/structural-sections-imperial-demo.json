@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "1.0",
+  "database": {
+    "id": "structuregen-demo-imperial",
+    "name": "StructureGen imperial demonstration dataset",
+    "version": "0.1.0",
+    "revisionDate": "2026-09-02",
+    "description": "A deliberately tiny dataset written in inches and pounds per foot, to demonstrate that a file declares its own units once and StructureGen converts every value on load.",
+    "verified": false,
+    "notes": "DEMONSTRATION DATA - NOT VERIFIED. Widely published AISC W-shape nominal dimensions, transcribed for demonstration only. Verify against your own authoritative source before use. Note that this file declares no standards or materials of its own, so it picks up the shared ones from standards.json in the same folder."
+  },
+  "units": {
+    "length": "in",
+    "unitWeight": "lb/ft",
+    "density": "lb/in3",
+    "pieceMass": "lb"
+  },
+  "sections": [
+    {
+      "id": "aisc-w12x26",
+      "standardId": "aisc-360",
+      "category": "i-section",
+      "designation": "W12X26",
+      "nominalSize": "W12",
+      "material": "s355jr",
+      "unitWeight": 26.0,
+      "dimensions": { "h": 12.22, "b": 6.49, "tw": 0.23, "tf": 0.38, "A": 7.65 },
+      "verified": false,
+      "provenance": "Widely published AISC W-shape nominal dimensions in inches. NOT verified against a controlled copy of the AISC Steel Construction Manual."
+    },
+    {
+      "id": "aisc-w16x31",
+      "standardId": "aisc-360",
+      "category": "i-section",
+      "designation": "W16X31",
+      "nominalSize": "W16",
+      "material": "s355jr",
+      "unitWeight": 31.0,
+      "dimensions": { "h": 15.88, "b": 5.525, "tw": 0.275, "tf": 0.44, "A": 9.13 },
+      "verified": false,
+      "provenance": "Widely published AISC W-shape nominal dimensions in inches. NOT verified against a controlled copy of the AISC Steel Construction Manual."
+    },
+    {
+      "id": "aisc-w8x31",
+      "standardId": "aisc-360",
+      "category": "h-section",
+      "designation": "W8X31",
+      "nominalSize": "W8",
+      "material": "s355jr",
+      "unitWeight": 31.0,
+      "dimensions": { "h": 8.0, "b": 8.0, "tw": 0.285, "tf": 0.435, "A": 9.13 },
+      "verified": false,
+      "provenance": "Widely published AISC W-shape nominal dimensions in inches. NOT verified against a controlled copy of the AISC Steel Construction Manual."
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>StructureGen.Services</RootNamespace>
+    <AssemblyName>StructureGen.Services</AssemblyName>
+    <Description>Application services and the abstraction the user interface uses to reach AutoCAD.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\StructureGen.Core\StructureGen.Core.csproj" />
+    <ProjectReference Include="..\StructureGen.Data\StructureGen.Data.csproj" />
+    <ProjectReference Include="..\StructureGen.Geometry\StructureGen.Geometry.csproj" />
+    <ProjectReference Include="..\StructureGen.Bom\StructureGen.Bom.csproj" />
+    <ProjectReference Include="..\StructureGen.Excel\StructureGen.Excel.csproj" />
+  </ItemGroup>
+
+</Project>

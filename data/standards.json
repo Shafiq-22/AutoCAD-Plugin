@@ -1,0 +1,109 @@
+{
+  "schemaVersion": "1.0",
+  "database": {
+    "id": "structuregen-standards",
+    "name": "StructureGen shared standards and materials",
+    "version": "0.1.0",
+    "revisionDate": "2026-09-02",
+    "description": "Standards and materials shared by every section file in this folder. A section file that declares no standards or materials of its own picks these up.",
+    "verified": false,
+    "notes": "DEMONSTRATION DATA - NOT VERIFIED."
+  },
+  "units": {
+    "length": "mm",
+    "unitWeight": "kg/m",
+    "density": "kg/m3",
+    "pieceMass": "kg"
+  },
+  "standards": [
+    {
+      "id": "en-10365",
+      "name": "EN 10365",
+      "region": "Europe",
+      "revision": "2017",
+      "description": "Hot rolled steel channels, I and H sections - dimensions and masses."
+    },
+    {
+      "id": "din-1026-1",
+      "name": "DIN 1026-1",
+      "region": "Germany",
+      "revision": "2009",
+      "description": "Hot rolled steel channels with taper flange (UPN)."
+    },
+    {
+      "id": "en-10056-1",
+      "name": "EN 10056-1",
+      "region": "Europe",
+      "revision": "2017",
+      "description": "Structural steel equal and unequal leg angles - dimensions."
+    },
+    {
+      "id": "en-10219",
+      "name": "EN 10219",
+      "region": "Europe",
+      "revision": "2006",
+      "description": "Cold formed welded structural hollow sections."
+    },
+    {
+      "id": "iso-4014",
+      "name": "ISO 4014",
+      "region": "International",
+      "revision": "2011",
+      "description": "Hexagon head bolts, product grades A and B."
+    },
+    {
+      "id": "iso-4032",
+      "name": "ISO 4032",
+      "region": "International",
+      "revision": "2012",
+      "description": "Hexagon regular nuts, style 1."
+    },
+    {
+      "id": "iso-7089",
+      "name": "ISO 7089",
+      "region": "International",
+      "revision": "2000",
+      "description": "Plain washers, normal series, product grade A."
+    },
+    {
+      "id": "generic",
+      "name": "Generic / stock",
+      "region": "-",
+      "revision": "-",
+      "description": "Plate, flat bar and round bar that are cut or stocked rather than rolled to a profile standard."
+    },
+    {
+      "id": "aisc-360",
+      "name": "AISC 360 / ANSI",
+      "region": "United States",
+      "revision": "2022",
+      "description": "Specification for structural steel buildings; W-shape dimensions per the AISC Steel Construction Manual."
+    }
+  ],
+  "materials": [
+    {
+      "id": "s235jr",
+      "name": "Structural steel",
+      "grade": "S235JR",
+      "density": 7850,
+      "standardId": "en-10025",
+      "notes": "Density is the conventional 7850 kg/m3 used for steelwork take-off."
+    },
+    {
+      "id": "s355jr",
+      "name": "Structural steel",
+      "grade": "S355JR",
+      "density": 7850,
+      "standardId": "en-10025",
+      "notes": "Density is the conventional 7850 kg/m3 used for steelwork take-off."
+    },
+    {
+      "id": "steel-88",
+      "name": "Fastener steel",
+      "grade": "8.8",
+      "density": 7850,
+      "standardId": "iso-898-1",
+      "notes": "Density is the conventional 7850 kg/m3 used for steelwork take-off."
+    }
+  ]
+}

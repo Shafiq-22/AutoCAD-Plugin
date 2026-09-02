@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Shafiq-22/AutoCAD-Plugin/data/schema/structural-database.schema.json",
+  "title": "StructureGen structural database",
+  "description": "The file format StructureGen reads section data from. Point your editor at this schema to get completion and validation while editing a database by hand. StructureGen validates far more than this schema can express - cross-references, per-category required dimensions and geometric plausibility - so a file that satisfies this schema may still be reported as invalid on load, with a message naming the record.",
+  "type": "object",
+  "required": ["schemaVersion", "sections"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "description": "The format version. This build reads major version 1. A newer minor version is accepted because minor revisions only add optional fields.",
+      "pattern": "^[0-9]+(\\.[0-9]+)*$"
+    },
+    "database": {
+      "type": "object",
+      "description": "Identity and provenance of the dataset. Recorded on generated objects so a drawing states which data revision it was built from.",
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "version": { "type": "string" },
+        "revisionDate": { "type": "string" },
+        "description": { "type": "string" },
+        "verified": { "type": "boolean" },
+        "notes": { "type": "string" }
+      }
+    },
+    "units": {
+      "type": "object",
+      "description": "The units the numbers in THIS file are written in. Declared once; every value is converted to millimetres and kilograms on load.",
+      "additionalProperties": false,
+      "properties": {
+        "length": { "type": "string", "examples": ["mm", "cm", "m", "in", "ft"] },
+        "unitWeight": { "type": "string", "examples": ["kg/m", "lb/ft", "kg/mm"] },
+        "density": { "type": "string", "examples": ["kg/m3", "lb/in3", "g/cm3"] },
+        "pieceMass": { "type": "string", "examples": ["kg", "g", "lb"] }
+      }
+    },
+    "standards": {
+      "type": "array",
+      "description": "The standards this file's sections belong to. May be omitted, in which case a shared standards.json in the same folder is used.",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "region": { "type": "string" },
+          "revision": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "materials": {
+      "type": "array",
+      "description": "Materials, and their densities where known. A density is what allows a weight to be derived for a profile with no tabulated mass per metre. Omitting it is honest: StructureGen then reports the weight as unavailable rather than estimating one.",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "grade": { "type": "string" },
+          "density": { "type": "number", "exclusiveMinimum": 0 },
+          "standardId": { "type": "string" },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "sections": {
+      "type": "array",
+      "description": "The profiles themselves.",
+      "items": { "$ref": "#/$defs/section" }
+    }
+  },
+  "$defs": {
+    "section": {
+      "type": "object",
+      "required": ["id", "standardId", "category", "designation"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique within the file. Written onto every object generated from this record, so changing it orphans existing drawings."
+        },
+        "standardId": { "type": "string" },
+        "category": {
+          "type": "string",
+          "description": "Which generator draws this profile. A category with no registered generator can still be scheduled but not drawn.",
+          "examples": [
+            "i-section", "h-section", "channel", "angle", "t-section", "pipe", "rhs", "shs",
+            "plate", "flat-bar", "round-bar", "bolt", "nut", "washer", "custom"
+          ]
+        },
+        "designation": { "type": "string" },
+        "nominalSize": { "type": "string" },
+        "material": { "type": "string", "description": "A material id, or a material name to match by." },
+        "grade": { "type": "string" },
+        "unitWeight": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Mass per length, in this file's unitWeight unit. Preferred over deriving a weight from geometry."
+        },
+        "pieceMass": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Mass per piece, in this file's pieceMass unit. Used for fasteners."
+        },
+        "dimensions": {
+          "type": "object",
+          "description": "Cross-sectional dimensions in this file's length unit, keyed by the vocabulary in docs/DATABASE.md. The key 'A' is an area and converts by the square of the length factor.",
+          "additionalProperties": { "type": "number" }
+        },
+        "properties": {
+          "type": "object",
+          "description": "Additional tabulated values such as second moments of area. Stored verbatim, never converted, and informational only.",
+          "additionalProperties": { "type": "number" }
+        },
+        "outline": {
+          "type": "array",
+          "minItems": 3,
+          "description": "An explicit closed cross-section outline, in this file's length unit. Lets a database introduce a profile no built-in generator covers.",
+          "items": {
+            "type": "object",
+            "required": ["x", "y"],
+            "additionalProperties": false,
+            "properties": {
+              "x": { "type": "number" },
+              "y": { "type": "number" },
+              "bulge": {
+                "type": "number",
+                "description": "Tangent of a quarter of the arc's included angle for the segment leaving this vertex. Zero is a straight segment; positive turns anticlockwise."
+              }
+            }
+          }
+        },
+        "verified": {
+          "type": "boolean",
+          "default": false,
+          "description": "Set true only once you have checked the record against your authoritative source. Unverified records are flagged in the palette, on the bill of materials and in the exported workbook."
+        },
+        "provenance": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

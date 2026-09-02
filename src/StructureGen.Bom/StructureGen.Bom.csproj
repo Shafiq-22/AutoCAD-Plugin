@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>StructureGen.Bom</RootNamespace>
+    <AssemblyName>StructureGen.Bom</AssemblyName>
+    <Description>Bill of materials aggregation, grouping and totalling.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\StructureGen.Core\StructureGen.Core.csproj" />
+  </ItemGroup>
+
+</Project>

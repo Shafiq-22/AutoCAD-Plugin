@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>StructureGen.Excel</RootNamespace>
+    <AssemblyName>StructureGen.Excel</AssemblyName>
+    <Description>Dependency-free SpreadsheetML reader and writer, and the bill of materials workbook.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\StructureGen.Core\StructureGen.Core.csproj" />
+    <ProjectReference Include="..\StructureGen.Bom\StructureGen.Bom.csproj" />
+  </ItemGroup>
+
+</Project>

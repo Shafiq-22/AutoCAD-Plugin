@@ -1,0 +1,36 @@
+{
+  "name": "EN I sections from a spreadsheet",
+  "description": "Maps a section table whose columns are named the way a European mill catalogue names them onto the StructureGen schema. Copy this file, change the column names on the right-hand side to match your own spreadsheet, and run StructureGen.DataImport.",
+
+  "standardId": "en-10365",
+  "category": "i-section",
+
+  "designationColumn": "Designation",
+  "nominalSizeColumn": "Nominal size",
+  "unitWeightColumn": "Mass",
+
+  "dimensions": {
+    "h": "Depth h",
+    "b": "Width b",
+    "tw": "Web tw",
+    "tf": "Flange tf",
+    "r": "Root radius r",
+    "A": "Area A"
+  },
+
+  "properties": {
+    "Iy": "Iy",
+    "Iz": "Iz"
+  },
+
+  "lengthUnit": "mm",
+  "unitWeightUnit": "kg/m",
+
+  "material": "s355jr",
+
+  "markVerified": false,
+  "provenance": "Imported from the mill catalogue spreadsheet. Not yet checked against a controlled copy of the standard.",
+
+  "skipRows": 0,
+  "blankMarkers": ["-", "--", "n/a", "N/A"]
+}

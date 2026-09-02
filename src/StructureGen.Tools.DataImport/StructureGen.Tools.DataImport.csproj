@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>StructureGen.Tools.DataImport</RootNamespace>
+    <AssemblyName>StructureGen.DataImport</AssemblyName>
+    <Description>Command line tool that converts section spreadsheets into the StructureGen database format and validates the result.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\StructureGen.Core\StructureGen.Core.csproj" />
+    <ProjectReference Include="..\StructureGen.Data\StructureGen.Data.csproj" />
+    <ProjectReference Include="..\StructureGen.Geometry\StructureGen.Geometry.csproj" />
+    <ProjectReference Include="..\StructureGen.Excel\StructureGen.Excel.csproj" />
+  </ItemGroup>
+
+</Project>
