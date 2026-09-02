@@ -8,9 +8,15 @@ namespace StructureGen.Core.Units
     /// (millimetres for length, kilograms for mass).
     /// </summary>
     /// <remarks>
-    /// All factors are exact by definition and are held as <see cref="decimal"/> so that
-    /// round-tripping a value through a conversion never introduces binary floating point
-    /// drift. This matters because the same numbers end up in the bill of materials.
+    /// Every factor is exact by definition and is held as a <see cref="decimal"/> rather than a
+    /// <see cref="double"/>, because these numbers end up on a weight schedule that someone will
+    /// check by hand.
+    ///
+    /// Between the metric units the factors are powers of ten, so conversions and round trips are
+    /// exact. Between metric and imperial they cannot be: dividing by 25.4 produces a repeating
+    /// decimal that no finite representation holds exactly. What decimal buys there is a residue
+    /// around twenty-four decimal places down, against the roughly fifteen significant digits a
+    /// double would give before the error started accumulating through a schedule's worth of sums.
     /// </remarks>
     public static class UnitConverter
     {

@@ -1,0 +1,56 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      The target framework and the AutoCAD API version are chosen by the AcadVersion property,
+      which is resolved in build/AcadVersions.props. Build one release profile at a time:
+
+        dotnet build -c Release -p:AcadVersion=2025
+        dotnet build -c Release -p:AcadVersion=2026
+        dotnet build -c Release -p:AcadVersion=2027
+    -->
+    <IsAcadHostedProject>true</IsAcadHostedProject>
+    <TargetFramework>$(AcadTargetFramework)</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>StructureGen.Acad</RootNamespace>
+    <AssemblyName>StructureGen.Acad</AssemblyName>
+    <Description>AutoCAD Managed .NET integration: commands, geometry creation, persistent metadata and tables.</Description>
+
+    <!-- A plugin is loaded by the host; it is never itself executable and needs no runtime config. -->
+    <EnableDynamicLoading>false</EnableDynamicLoading>
+    <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>$(MSBuildThisFileDirectory)..\..\artifacts\acad$(AcadVersion)\</OutputPath>
+
+    <!--
+      The AutoCAD Managed API marks a member obsolete in one release while it remains the only
+      option in an earlier one, and this project is compiled against three API versions from the
+      same source. Treating that as an error would make it impossible to support all three, so
+      obsolete-member warnings are reported by the compiler but do not fail the build.
+    -->
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      ExcludeAssets="runtime" is essential. The Autodesk assemblies are compile-time references
+      only: AutoCAD loads its own copies, and shipping a second copy beside the plugin causes the
+      plugin to fail to load. It is also why no Autodesk binary ever appears in the build output or
+      in this repository.
+    -->
+    <PackageReference Include="AutoCAD.NET" Version="$(AcadNetPackageVersion)" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="AutoCAD.NET.Core" Version="$(AcadNetPackageVersion)" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Include="AutoCAD.NET.Model" Version="$(AcadNetPackageVersion)" ExcludeAssets="runtime" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\StructureGen.Core\StructureGen.Core.csproj" />
+    <ProjectReference Include="..\StructureGen.Data\StructureGen.Data.csproj" />
+    <ProjectReference Include="..\StructureGen.Geometry\StructureGen.Geometry.csproj" />
+    <ProjectReference Include="..\StructureGen.Bom\StructureGen.Bom.csproj" />
+    <ProjectReference Include="..\StructureGen.Excel\StructureGen.Excel.csproj" />
+    <ProjectReference Include="..\StructureGen.Services\StructureGen.Services.csproj" />
+    <ProjectReference Include="..\StructureGen.UI\StructureGen.UI.csproj" />
+  </ItemGroup>
+
+</Project>

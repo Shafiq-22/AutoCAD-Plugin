@@ -1,0 +1,458 @@
+<UserControl x:Class="StructureGen.UI.Views.StructureGenView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             Background="#F5F5F5"
+             Foreground="#1E1E1E"
+             MinWidth="460"
+             MinHeight="420">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#1E1E1E" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#1E1E1E" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+        </Style>
+
+        <Style x:Key="SectionHeading" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Foreground" Value="#1F3864" />
+            <Setter Property="Margin" Value="0,10,0,4" />
+        </Style>
+
+        <Style x:Key="Warning" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#9C0006" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,4,0,4" />
+        </Style>
+
+        <Style x:Key="Hint" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#5A5A5A" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="FontSize" Value="11" />
+        </Style>
+
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="MinWidth" Value="86" />
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Margin" Value="0,2,0,2" />
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Margin" Value="0,2,0,2" />
+            <Setter Property="Padding" Value="2,1" />
+        </Style>
+    </UserControl.Resources>
+
+    <DockPanel LastChildFill="True">
+
+        <Border DockPanel.Dock="Bottom" Background="#E4E4E4" BorderBrush="#C8C8C8" BorderThickness="0,1,0,0" Padding="8,5">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{Binding Status}" TextWrapping="Wrap" />
+                <TextBlock Grid.Column="1" Style="{StaticResource Hint}" Margin="8,0,0,0"
+                           Text="{Binding Version, StringFormat=StructureGen {0}}" />
+            </Grid>
+        </Border>
+
+        <TabControl SelectedIndex="{Binding SelectedTabIndex}" Background="#F5F5F5" BorderThickness="0">
+
+            <!-- ============================ 1. CREATE ============================ -->
+            <TabItem Header="1 Create">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10">
+                    <StackPanel>
+
+                        <TextBlock Style="{StaticResource SectionHeading}" Text="Profile" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource FieldLabel}" Text="Category" />
+                            <ComboBox Grid.Row="0" Grid.Column="1"
+                                      ItemsSource="{Binding Editor.Categories}"
+                                      SelectedItem="{Binding Editor.Category}"
+                                      DisplayMemberPath="DisplayName" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource FieldLabel}" Text="Standard" />
+                            <ComboBox Grid.Row="1" Grid.Column="1"
+                                      ItemsSource="{Binding Editor.Standards}"
+                                      SelectedItem="{Binding Editor.Standard}"
+                                      DisplayMemberPath="Name" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource FieldLabel}" Text="Profile" />
+                            <ComboBox Grid.Row="2" Grid.Column="1"
+                                      ItemsSource="{Binding Editor.Profiles}"
+                                      SelectedItem="{Binding Editor.Profile}"
+                                      DisplayMemberPath="Designation"
+                                      IsEditable="False" />
+                        </Grid>
+
+                        <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" FontWeight="SemiBold"
+                                   Text="{Binding Editor.ProfileSummary}" />
+
+                        <TextBlock Style="{StaticResource Warning}"
+                                   Text="{Binding Editor.SourceWarning}"
+                                   Visibility="{Binding Editor.HasSourceWarning, Converter={StaticResource BoolToVis}}" />
+
+                        <TextBlock Style="{StaticResource SectionHeading}" Text="Standard dimensions (mm)" />
+
+                        <TextBlock Style="{StaticResource Hint}"
+                                   Text="Values fixed by the standard are locked. Turn on custom mode below only if you intend to depart from the published profile." />
+
+                        <Border BorderBrush="#C8C8C8" BorderThickness="1" Background="White" Margin="0,4,0,0">
+                            <ItemsControl ItemsSource="{Binding Editor.Parameters}" MaxHeight="220">
+                                <ItemsControl.Template>
+                                    <ControlTemplate TargetType="ItemsControl">
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                            <ItemsPresenter />
+                                        </ScrollViewer>
+                                    </ControlTemplate>
+                                </ItemsControl.Template>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="6,3">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="170" />
+                                                <ColumnDefinition Width="90" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding DisplayName}"
+                                                       ToolTip="{Binding Descriptor.Description}" />
+                                            <TextBox Grid.Column="1"
+                                                     Text="{Binding Value, UpdateSourceTrigger=LostFocus}"
+                                                     IsEnabled="{Binding IsEditable}"
+                                                     ToolTip="{Binding Descriptor.Description}" />
+                                            <TextBlock Grid.Column="2" Margin="8,0,0,0"
+                                                       Style="{StaticResource Hint}"
+                                                       Text="{Binding StatusText}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                            <CheckBox Content="Custom / non-standard mode"
+                                      IsChecked="{Binding Editor.CustomMode}"
+                                      VerticalAlignment="Center" Margin="0,0,12,0" />
+                            <Button Content="Reset" Command="{Binding Editor.ResetParametersCommand}" />
+                        </StackPanel>
+
+                        <TextBlock Style="{StaticResource Warning}" Text="{Binding Editor.CustomModeWarning}"
+                                   Visibility="{Binding Editor.CustomMode, Converter={StaticResource BoolToVis}}" />
+
+                        <TextBlock Style="{StaticResource SectionHeading}" Text="This occurrence" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource FieldLabel}" Text="Length (mm)" />
+                            <TextBox Grid.Row="0" Grid.Column="1"
+                                     Text="{Binding Editor.LengthMm, UpdateSourceTrigger=LostFocus}"
+                                     IsEnabled="{Binding Editor.LengthApplies}" />
+
+                            <TextBlock Grid.Row="0" Grid.Column="2" Style="{StaticResource FieldLabel}" Margin="12,0,8,0" Text="Quantity" />
+                            <TextBox Grid.Row="0" Grid.Column="3"
+                                     Text="{Binding Editor.Quantity, UpdateSourceTrigger=LostFocus}" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource FieldLabel}" Text="Detail" />
+                            <ComboBox Grid.Row="1" Grid.Column="1"
+                                      ItemsSource="{Binding Editor.DetailLevels}"
+                                      SelectedItem="{Binding Editor.DetailLevel}" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="2" Style="{StaticResource FieldLabel}" Margin="12,0,8,0" Text="Draw as" />
+                            <ComboBox Grid.Row="1" Grid.Column="3"
+                                      ItemsSource="{Binding Editor.Representations}"
+                                      SelectedItem="{Binding Editor.Representation}" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource FieldLabel}" Text="Layer" />
+                            <TextBox Grid.Row="2" Grid.Column="1"
+                                     Text="{Binding Editor.Layer, UpdateSourceTrigger=LostFocus}"
+                                     ToolTip="Leave empty to use the automatic layer for this category." />
+
+                            <TextBlock Grid.Row="2" Grid.Column="2" Style="{StaticResource FieldLabel}" Margin="12,0,8,0" Text="Notes" />
+                            <TextBox Grid.Row="2" Grid.Column="3"
+                                     Text="{Binding Editor.Notes, UpdateSourceTrigger=LostFocus}" />
+                        </Grid>
+
+                        <TextBlock Style="{StaticResource SectionHeading}" Text="Placement" />
+
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Pick point" Command="{Binding Editor.PickPointCommand}" />
+                            <Button Content="Pick start / end" Command="{Binding Editor.PickSegmentCommand}"
+                                    ToolTip="The member length is measured from the two points you pick. The cross-section is not affected." />
+                            <Button Content="Clear" Command="{Binding Editor.ClearPlacementCommand}" />
+                        </StackPanel>
+
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,0"
+                                   Text="{Binding Editor.PlacementDescription}" />
+
+                        <Separator Margin="0,12,0,8" />
+
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Add to list" Command="{Binding AddToListCommand}" MinWidth="110" />
+                            <Button Content="Replace selected" Command="{Binding UpdateSelectedCommand}" MinWidth="120" />
+                            <Button Content="Update in drawing" Command="{Binding UpdateInDrawingCommand}" MinWidth="130"
+                                    ToolTip="Rebuilds the drawing object this element was loaded from, keeping its identity." />
+                        </StackPanel>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ============================ 2. LIST ============================ -->
+            <TabItem Header="2 List">
+                <DockPanel Margin="10">
+
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,6">
+                        <Button Content="Duplicate" Command="{Binding List.DuplicateCommand}" />
+                        <Button Content="Delete" Command="{Binding List.DeleteCommand}" />
+                        <Button Content="Move up" Command="{Binding List.MoveUpCommand}" />
+                        <Button Content="Move down" Command="{Binding List.MoveDownCommand}" />
+                        <Button Content="Clear" Command="{Binding List.ClearCommand}" />
+                    </StackPanel>
+
+                    <Border DockPanel.Dock="Bottom" Margin="0,6,0,0">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Validate" Command="{Binding ValidateListCommand}" />
+                                <Button Content="Generate selected" Command="{Binding GenerateSelectedCommand}" MinWidth="130" />
+                                <Button Content="Generate all" Command="{Binding GenerateAllCommand}" MinWidth="110" />
+                            </StackPanel>
+                            <TextBlock Margin="0,8,0,0" FontWeight="SemiBold"
+                                       Text="{Binding List.TotalWeight, StringFormat=Running total: {0}}" />
+                            <TextBlock Style="{StaticResource Hint}"
+                                       Text="{Binding List.TotalPieces, StringFormat=Pieces in list: {0}}" />
+                        </StackPanel>
+                    </Border>
+
+                    <DataGrid ItemsSource="{Binding List.Items}"
+                              SelectedItem="{Binding List.Selected}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal"
+                              RowHeaderWidth="0"
+                              SelectionMode="Single"
+                              Background="White">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="#" Binding="{Binding ItemNumber}" Width="34" />
+                            <DataGridTextColumn Header="Category" Binding="{Binding Category}" Width="110" />
+                            <DataGridTextColumn Header="Standard" Binding="{Binding Standard}" Width="90" />
+                            <DataGridTextColumn Header="Profile" Binding="{Binding Profile}" Width="150" />
+                            <DataGridTextColumn Header="Length (mm)" Binding="{Binding Length}" Width="90" />
+                            <DataGridTextColumn Header="Qty" Binding="{Binding Quantity}" Width="46" />
+                            <DataGridTextColumn Header="kg/m" Binding="{Binding UnitWeight}" Width="70" />
+                            <DataGridTextColumn Header="Total kg" Binding="{Binding TotalWeight}" Width="80" />
+                            <DataGridTextColumn Header="Layer" Binding="{Binding Layer}" Width="110" />
+                            <DataGridTextColumn Header="Note" Binding="{Binding AttentionReason}" Width="*" />
+                        </DataGrid.Columns>
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Setter Property="ToolTip" Value="{Binding WeightExplanation}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding NeedsAttention}" Value="True">
+                                        <Setter Property="Foreground" Value="#9C0006" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+
+            <!-- ============================ 3. BOM ============================ -->
+            <TabItem Header="3 Bill of materials">
+                <DockPanel Margin="10">
+
+                    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Build from drawing" Command="{Binding Bom.BuildFromDrawingCommand}" MinWidth="130"
+                                    ToolTip="Reads the objects that actually exist in the drawing. This is the authoritative schedule." />
+                            <Button Content="Preview from list" Command="{Binding Bom.PreviewFromListCommand}" MinWidth="120"
+                                    ToolTip="Shows what the working list would weigh. Nothing is drawn." />
+                        </StackPanel>
+                        <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Style="{StaticResource Hint}"
+                                   Text="{Binding Bom.SourceDescription}" />
+                        <TextBlock Style="{StaticResource Warning}" Text="{Binding Bom.Caveats}"
+                                   Visibility="{Binding Bom.HasCaveats, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
+
+                    <StackPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">
+                        <TextBlock FontWeight="SemiBold" Text="{Binding Bom.TotalsSummary}" TextWrapping="Wrap" />
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                            <Button Content="Table in model" Command="{Binding Bom.InsertInModelCommand}" MinWidth="110" />
+                            <Button Content="Table in layout" Command="{Binding Bom.InsertInLayoutCommand}" MinWidth="110" />
+                            <Button Content="Export to Excel" Command="{Binding Bom.ExportCommand}" MinWidth="110" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <DataGrid ItemsSource="{Binding Bom.Lines}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              CanUserAddRows="False"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal"
+                              RowHeaderWidth="0"
+                              Background="White">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="#" Binding="{Binding ItemNumber}" Width="34" />
+                            <DataGridTextColumn Header="Category" Binding="{Binding CategoryName}" Width="110" />
+                            <DataGridTextColumn Header="Standard" Binding="{Binding StandardId}" Width="90" />
+                            <DataGridTextColumn Header="Profile" Binding="{Binding Designation}" Width="150" />
+                            <DataGridTextColumn Header="Dimensions (mm)" Binding="{Binding DimensionSummary}" Width="160" />
+                            <DataGridTextColumn Header="Length (mm)" Binding="{Binding LengthMm, StringFormat=N1}" Width="90" />
+                            <DataGridTextColumn Header="Qty" Binding="{Binding Quantity}" Width="46" />
+                            <DataGridTextColumn Header="kg/m" Binding="{Binding UnitWeightKgPerM, StringFormat=N2}" Width="70" />
+                            <DataGridTextColumn Header="Total kg" Binding="{Binding TotalMassKg, StringFormat=N2}" Width="86" />
+                            <DataGridTextColumn Header="Material" Binding="{Binding Material}" Width="*" />
+                        </DataGrid.Columns>
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Setter Property="ToolTip" Value="{Binding MassExplanation}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MassIsKnown}" Value="False">
+                                        <Setter Property="Foreground" Value="#9C0006" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding IsCustom}" Value="True">
+                                        <Setter Property="Foreground" Value="#9C0006" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
+                    </DataGrid>
+                </DockPanel>
+            </TabItem>
+
+            <!-- ============================ 4. SETTINGS ============================ -->
+            <TabItem Header="4 Settings">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="10">
+                    <StackPanel>
+
+                        <TextBlock Style="{StaticResource SectionHeading}" Text="Structural database" />
+
+                        <TextBlock Style="{StaticResource Hint}"
+                                   Text="Replace the data file and choose Reload. Nothing needs recompiling. A relative path resolves against the plugin's data folder." />
+
+                        <TextBox Margin="0,6,0,0" Text="{Binding Settings.DatabasePath, UpdateSourceTrigger=LostFocus}" />
+
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                            <Button Content="Reload database" Command="{Binding Settings.ReloadDatabaseCommand}" MinWidth="120" />
+                            <Button Content="Save settings" Command="{Binding Settings.SaveCommand}" MinWidth="110" />
+                        </StackPanel>
+
+                        <TextBlock Margin="0,8,0,0" TextWrapping="Wrap" FontWeight="SemiBold"
+                                   Text="{Binding Settings.DatabaseSummary}" />
+                        <TextBlock Style="{StaticResource Hint}" Text="{Binding Settings.LoadedPath, StringFormat=Loaded from: {0}}" />
+
+                        <TextBlock Style="{StaticResource SectionHeading}" Text="Validation report" />
+                        <Border BorderBrush="#C8C8C8" BorderThickness="1" Background="White" Padding="6" MaxHeight="150">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <TextBlock Text="{Binding Settings.ValidationReport}" TextWrapping="Wrap" FontFamily="Consolas" FontSize="11" />
+                            </ScrollViewer>
+                        </Border>
+
+                        <TextBlock Style="{StaticResource SectionHeading}" Text="Units and presentation" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource FieldLabel}" Text="Entry length unit" />
+                            <ComboBox Grid.Row="0" Grid.Column="1" ItemsSource="{Binding Settings.LengthUnits}"
+                                      SelectedItem="{Binding Settings.DisplayLengthUnit}" />
+
+                            <TextBlock Grid.Row="0" Grid.Column="2" Style="{StaticResource FieldLabel}" Margin="12,0,8,0" Text="Schedule length unit" />
+                            <ComboBox Grid.Row="0" Grid.Column="3" ItemsSource="{Binding Settings.LengthUnits}"
+                                      SelectedItem="{Binding Settings.BomLengthUnit}" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource FieldLabel}" Text="Mass unit" />
+                            <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Settings.MassUnits}"
+                                      SelectedItem="{Binding Settings.DisplayMassUnit}" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="2" Style="{StaticResource FieldLabel}" Margin="12,0,8,0" Text="Default detail" />
+                            <ComboBox Grid.Row="1" Grid.Column="3" ItemsSource="{Binding Settings.DetailLevels}"
+                                      SelectedItem="{Binding Settings.DefaultDetailLevel}" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource FieldLabel}" Text="Layer prefix" />
+                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Settings.LayerPrefix, UpdateSourceTrigger=LostFocus}" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="2" Style="{StaticResource FieldLabel}" Margin="12,0,8,0" Text="Table text height" />
+                            <TextBox Grid.Row="2" Grid.Column="3" Text="{Binding Settings.BomTextHeight, UpdateSourceTrigger=LostFocus}" />
+                        </Grid>
+
+                        <TextBlock Style="{StaticResource SectionHeading}" Text="Schedule grouping" />
+
+                        <CheckBox Content="Collapse identical members onto one line with a quantity"
+                                  IsChecked="{Binding Settings.GroupIdenticalElements}" Margin="0,2" />
+                        <CheckBox Content="Treat members on different layers as different lines"
+                                  IsChecked="{Binding Settings.GroupByLayer}" Margin="0,2" />
+
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <TextBlock Style="{StaticResource FieldLabel}" Text="Length grouping tolerance (mm)" />
+                            <TextBox Width="80" Text="{Binding Settings.LengthGroupingToleranceMm, UpdateSourceTrigger=LostFocus}" />
+                        </StackPanel>
+
+                        <CheckBox Content="Write verbose diagnostics to the log file"
+                                  IsChecked="{Binding Settings.VerboseLogging}" Margin="0,8,0,0" />
+
+                        <TextBlock Style="{StaticResource SectionHeading}" Text="Folders" />
+                        <TextBlock Style="{StaticResource Hint}" Text="{Binding Settings.DataFolder, StringFormat=Data: {0}}" />
+                        <TextBlock Style="{StaticResource Hint}" Text="{Binding Settings.LogFolder, StringFormat=Logs: {0}}" />
+                        <TextBlock Style="{StaticResource Hint}" Text="{Binding Settings.SettingsFile, StringFormat=Settings: {0}}" />
+
+                        <Border Margin="0,14,0,0" Background="#FFF4E5" BorderBrush="#E0B080" BorderThickness="1" Padding="8">
+                            <TextBlock TextWrapping="Wrap" FontSize="11" Foreground="#5A3E00"
+                                       Text="StructureGen is a drafting and documentation aid. It performs no structural engineering design, analysis or verification. Profile dimensions and weights must be verified against your authoritative copy of the relevant standard, and the geometry it produces does not constitute engineering approval." />
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+        </TabControl>
+    </DockPanel>
+</UserControl>

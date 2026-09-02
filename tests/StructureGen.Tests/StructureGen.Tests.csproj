@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>StructureGen.Tests</RootNamespace>
+    <AssemblyName>StructureGen.Tests</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+
+    <!-- Test names read better as prose than as identifiers, and fixtures need no XML docs. -->
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CA1707;xUnit1013</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Only the platform-neutral projects are referenced. The AutoCAD and WPF layers cannot be
+      built or loaded on a build agent without AutoCAD installed, which is precisely why the
+      architecture keeps everything worth testing out of them.
+    -->
+    <ProjectReference Include="..\..\src\StructureGen.Core\StructureGen.Core.csproj" />
+    <ProjectReference Include="..\..\src\StructureGen.Data\StructureGen.Data.csproj" />
+    <ProjectReference Include="..\..\src\StructureGen.Geometry\StructureGen.Geometry.csproj" />
+    <ProjectReference Include="..\..\src\StructureGen.Bom\StructureGen.Bom.csproj" />
+    <ProjectReference Include="..\..\src\StructureGen.Excel\StructureGen.Excel.csproj" />
+    <ProjectReference Include="..\..\src\StructureGen.Services\StructureGen.Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The shipped dataset is tested as data, so it travels with the test binaries. -->
+    <None Include="..\..\data\**\*.*" LinkBase="data" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

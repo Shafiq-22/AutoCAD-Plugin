@@ -1,0 +1,15 @@
+{
+  "solution": {
+    "path": "StructureGen.sln",
+    "projects": [
+      "src\\StructureGen.Core\\StructureGen.Core.csproj",
+      "src\\StructureGen.Data\\StructureGen.Data.csproj",
+      "src\\StructureGen.Geometry\\StructureGen.Geometry.csproj",
+      "src\\StructureGen.Bom\\StructureGen.Bom.csproj",
+      "src\\StructureGen.Excel\\StructureGen.Excel.csproj",
+      "src\\StructureGen.Services\\StructureGen.Services.csproj",
+      "src\\StructureGen.Tools.DataImport\\StructureGen.Tools.DataImport.csproj",
+      "tests\\StructureGen.Tests\\StructureGen.Tests.csproj"
+    ]
+  }
+}

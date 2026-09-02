@@ -159,37 +159,37 @@ namespace StructureGen.Excel.Xlsx
             using Stream stream = entry.Open();
             using XmlReader reader = XmlReader.Create(stream, SafeSettings());
 
-            StringBuilder current = new();
-            bool inItem = false;
-
             while (reader.Read())
             {
-                switch (reader.NodeType)
+                if (reader.NodeType != XmlNodeType.Element || reader.LocalName != "si")
                 {
-                    case XmlNodeType.Element when reader.LocalName == "si":
-                        current.Clear();
-                        inItem = true;
-                        if (reader.IsEmptyElement)
-                        {
-                            values.Add(string.Empty);
-                            inItem = false;
-                        }
-
-                        break;
-
-                    case XmlNodeType.Element when inItem && reader.LocalName == "t":
-                        if (!reader.IsEmptyElement)
-                        {
-                            current.Append(reader.ReadElementContentAsString());
-                        }
-
-                        break;
-
-                    case XmlNodeType.EndElement when reader.LocalName == "si":
-                        values.Add(current.ToString());
-                        inItem = false;
-                        break;
+                    continue;
                 }
+
+                if (reader.IsEmptyElement)
+                {
+                    values.Add(string.Empty);
+                    continue;
+                }
+
+                // Each shared string is read through a reader scoped to its own element. Reading the
+                // text nodes directly from the outer reader does not work: consuming an element's
+                // content also consumes its end tag, so the end of the entry is never observed and
+                // every string comes back empty. A subtree keeps the bookkeeping correct, and it
+                // also handles an entry split across several formatted runs, which is what a
+                // spreadsheet produces when part of a cell's text is styled differently.
+                using XmlReader item = reader.ReadSubtree();
+                StringBuilder text = new();
+
+                while (item.Read())
+                {
+                    if (item.NodeType == XmlNodeType.Element && item.LocalName == "t" && !item.IsEmptyElement)
+                    {
+                        text.Append(item.ReadElementContentAsString());
+                    }
+                }
+
+                values.Add(text.ToString());
             }
 
             return values;

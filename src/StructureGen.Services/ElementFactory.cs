@@ -116,7 +116,9 @@ namespace StructureGen.Services
                 notes,
                 drawingReference,
                 isCustom,
-                record.Verified);
+                record.Verified,
+                null,
+                record.Outline);
 
             ValidationReport validation = generator.Validate(definition, record);
             if (validation.HasErrors)

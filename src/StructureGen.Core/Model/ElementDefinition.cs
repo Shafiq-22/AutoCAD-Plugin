@@ -41,6 +41,10 @@ namespace StructureGen.Core.Model
         /// <param name="isCustom">Whether the user has deliberately departed from the standard profile.</param>
         /// <param name="sourceDataVerified">Whether the source record was marked verified.</param>
         /// <param name="createdUtc">When the element was first created.</param>
+        /// <param name="outline">
+        /// An explicit cross-section outline copied from the database record, for profiles no
+        /// built-in generator covers.
+        /// </param>
         public ElementDefinition(
             Guid elementId,
             string categoryId,
@@ -63,7 +67,8 @@ namespace StructureGen.Core.Model
             string? drawingReference = null,
             bool isCustom = false,
             bool sourceDataVerified = false,
-            DateTime? createdUtc = null)
+            DateTime? createdUtc = null,
+            IReadOnlyList<ProfileVertex>? outline = null)
         {
             ElementId = elementId;
             CategoryId = categoryId ?? throw new ArgumentNullException(nameof(categoryId));
@@ -88,6 +93,7 @@ namespace StructureGen.Core.Model
             IsCustom = isCustom;
             SourceDataVerified = sourceDataVerified;
             CreatedUtc = createdUtc ?? DateTime.UtcNow;
+            Outline = outline;
         }
 
         /// <summary>Gets the stable identity of this element, preserved across every edit.</summary>
@@ -159,6 +165,20 @@ namespace StructureGen.Core.Model
         /// <summary>Gets the moment the element was first created.</summary>
         public DateTime CreatedUtc { get; }
 
+        /// <summary>
+        /// Gets the explicit cross-section outline, when the profile has one.
+        /// </summary>
+        /// <remarks>
+        /// The outline is copied onto the element rather than being looked up from the database each
+        /// time. A drawing containing a fabricated section must still regenerate on a machine where
+        /// that section's database is not installed, or after the user has swapped their data file
+        /// for a newer revision that renumbered its records.
+        /// </remarks>
+        public IReadOnlyList<ProfileVertex>? Outline { get; }
+
+        /// <summary>Gets a value indicating whether this element carries an explicit outline.</summary>
+        public bool HasOutline => Outline is { Count: >= 3 };
+
         /// <summary>Gets the member length expressed as a <see cref="Units.Length"/>, if it has one.</summary>
         public Units.Length? Length => LengthMm.HasValue ? Units.Length.FromMillimetres(LengthMm.Value) : null;
 
@@ -219,7 +239,8 @@ namespace StructureGen.Core.Model
                 DrawingReference,
                 isCustom ?? IsCustom,
                 SourceDataVerified,
-                CreatedUtc);
+                CreatedUtc,
+                Outline);
 
         /// <inheritdoc />
         public override string ToString() =>

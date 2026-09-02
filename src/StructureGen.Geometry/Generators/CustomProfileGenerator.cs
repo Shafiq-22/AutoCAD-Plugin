@@ -74,9 +74,7 @@ namespace StructureGen.Geometry.Generators
         /// <inheritdoc />
         protected override void ValidateCore(ElementDefinition definition, ValidationReport report)
         {
-            SectionRecord? record = _recordLookup(definition.SectionRecordId);
-
-            if (record is { HasOutline: true })
+            if (definition.HasOutline || _recordLookup(definition.SectionRecordId) is { HasOutline: true })
             {
                 return;
             }
@@ -98,12 +96,16 @@ namespace StructureGen.Geometry.Generators
 
         private ProfileGeometry BuildProfile(ElementDefinition definition)
         {
-            SectionRecord? record = _recordLookup(definition.SectionRecordId);
+            // The element's own copy is preferred over the database's. An element regenerated from
+            // the metadata on a drawing object must not depend on the record it came from still
+            // being installed, or still carrying the same identifier.
+            IReadOnlyList<ProfileVertex>? outline = definition.HasOutline
+                ? definition.Outline
+                : _recordLookup(definition.SectionRecordId)?.Outline;
 
-            if (record is { HasOutline: true })
+            if (outline is { Count: >= 3 })
             {
-                ProfileLoop outer = new ProfileLoop(record.Outline!, true).WithCanonicalWinding();
-                return new ProfileGeometry(outer);
+                return new ProfileGeometry(new ProfileLoop(outline, true).WithCanonicalWinding());
             }
 
             double diameter = Dimension(definition, DimensionKeys.OutsideDiameter);

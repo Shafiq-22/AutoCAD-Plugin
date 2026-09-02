@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      The user interface targets the same framework as the AutoCAD layer so that one build profile
+      produces a consistent pair, but it references no Autodesk assembly at all: it reaches AutoCAD
+      only through StructureGen.Services.ICadService.
+    -->
+    <IsAcadHostedProject>true</IsAcadHostedProject>
+    <TargetFramework>$(AcadTargetFramework)</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>StructureGen.UI</RootNamespace>
+    <AssemblyName>StructureGen.UI</AssemblyName>
+    <Description>The StructureGen palette: views and view models, with no dependency on AutoCAD.</Description>
+
+    <EnableDynamicLoading>false</EnableDynamicLoading>
+    <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>$(MSBuildThisFileDirectory)..\..\artifacts\acad$(AcadVersion)\</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\StructureGen.Core\StructureGen.Core.csproj" />
+    <ProjectReference Include="..\StructureGen.Data\StructureGen.Data.csproj" />
+    <ProjectReference Include="..\StructureGen.Geometry\StructureGen.Geometry.csproj" />
+    <ProjectReference Include="..\StructureGen.Bom\StructureGen.Bom.csproj" />
+    <ProjectReference Include="..\StructureGen.Excel\StructureGen.Excel.csproj" />
+    <ProjectReference Include="..\StructureGen.Services\StructureGen.Services.csproj" />
+  </ItemGroup>
+
+</Project>
