@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The AutoCAD Autoloader manifest.
+
+  One bundle carries a build for each supported release. AutoCAD reads this file, matches its own
+  release against the SeriesMin and SeriesMax of each Components block, and loads only the matching
+  ModuleName. A release with no matching block simply loads nothing, so installing the bundle on an
+  unsupported AutoCAD is harmless rather than an error.
+
+  Platform="AutoCAD*" is what makes the bundle load in the verticals as well as in plain AutoCAD.
+  StructureGen uses only the AutoCAD Managed API that every vertical shares, so AutoCAD Mechanical
+  and AutoCAD Plant 3D load the same binary as AutoCAD itself.
+
+  LoadOnCommandInvocation defers loading until one of the listed commands is typed, so the plugin
+  costs an unaware user nothing at start-up.
+
+  The release-to-series mapping is: AutoCAD 2025 is R25.0, 2026 is R25.1 and 2027 is R26.0.
+-->
+<ApplicationPackage
+    SchemaVersion="1.0"
+    AutodeskProduct="AutoCAD"
+    ProductType="Application"
+    Name="StructureGen"
+    Description="Parametric structural element generation, bill of materials and Excel export."
+    AppVersion="1.0.0"
+    Author="StructureGen contributors"
+    ProductCode="{6D9A1F84-3C77-4C1E-9D0B-5E2A4B8C7F13}"
+    UpgradeCode="{2F41B7C6-8E5D-4A93-B1C0-7A6E9D3F2C58}"
+    HelpFile="./Contents/Docs/README.md">
+
+  <CompanyDetails
+      Name="StructureGen contributors"
+      Url="https://github.com/Shafiq-22/AutoCAD-Plugin"
+      Email="" />
+
+  <!-- ==================== AutoCAD 2025 (R25.0, .NET 8) ==================== -->
+  <Components Description="AutoCAD 2025">
+    <RuntimeRequirements OS="Win64" Platform="AutoCAD*" SeriesMin="R25.0" SeriesMax="R25.0" />
+    <ComponentEntry
+        AppName="StructureGen"
+        Version="1.0.0"
+        ModuleName="./Contents/2025/StructureGen.Acad.dll"
+        AppDescription="Parametric structural element generation for AutoCAD 2025."
+        LoadOnAutoCADStartup="False"
+        LoadOnCommandInvocation="True">
+      <Commands GroupName="STRUCTUREGEN">
+        <Command Global="STRUCTUREGEN" Local="STRUCTUREGEN" />
+        <Command Global="SGEDIT" Local="SGEDIT" />
+        <Command Global="SGINFO" Local="SGINFO" />
+        <Command Global="SGBOM" Local="SGBOM" />
+        <Command Global="SGBOMEXPORT" Local="SGBOMEXPORT" />
+        <Command Global="SGUPDATE" Local="SGUPDATE" />
+        <Command Global="SGRELOADDB" Local="SGRELOADDB" />
+        <Command Global="SGSETTINGS" Local="SGSETTINGS" />
+        <Command Global="SGABOUT" Local="SGABOUT" />
+      </Commands>
+    </ComponentEntry>
+  </Components>
+
+  <!-- ==================== AutoCAD 2026 (R25.1, .NET 8) ==================== -->
+  <Components Description="AutoCAD 2026">
+    <RuntimeRequirements OS="Win64" Platform="AutoCAD*" SeriesMin="R25.1" SeriesMax="R25.1" />
+    <ComponentEntry
+        AppName="StructureGen"
+        Version="1.0.0"
+        ModuleName="./Contents/2026/StructureGen.Acad.dll"
+        AppDescription="Parametric structural element generation for AutoCAD 2026."
+        LoadOnAutoCADStartup="False"
+        LoadOnCommandInvocation="True">
+      <Commands GroupName="STRUCTUREGEN">
+        <Command Global="STRUCTUREGEN" Local="STRUCTUREGEN" />
+        <Command Global="SGEDIT" Local="SGEDIT" />
+        <Command Global="SGINFO" Local="SGINFO" />
+        <Command Global="SGBOM" Local="SGBOM" />
+        <Command Global="SGBOMEXPORT" Local="SGBOMEXPORT" />
+        <Command Global="SGUPDATE" Local="SGUPDATE" />
+        <Command Global="SGRELOADDB" Local="SGRELOADDB" />
+        <Command Global="SGSETTINGS" Local="SGSETTINGS" />
+        <Command Global="SGABOUT" Local="SGABOUT" />
+      </Commands>
+    </ComponentEntry>
+  </Components>
+
+  <!-- ==================== AutoCAD 2027 (R26.0, .NET 10) ==================== -->
+  <Components Description="AutoCAD 2027">
+    <RuntimeRequirements OS="Win64" Platform="AutoCAD*" SeriesMin="R26.0" SeriesMax="R26.0" />
+    <ComponentEntry
+        AppName="StructureGen"
+        Version="1.0.0"
+        ModuleName="./Contents/2027/StructureGen.Acad.dll"
+        AppDescription="Parametric structural element generation for AutoCAD 2027."
+        LoadOnAutoCADStartup="False"
+        LoadOnCommandInvocation="True">
+      <Commands GroupName="STRUCTUREGEN">
+        <Command Global="STRUCTUREGEN" Local="STRUCTUREGEN" />
+        <Command Global="SGEDIT" Local="SGEDIT" />
+        <Command Global="SGINFO" Local="SGINFO" />
+        <Command Global="SGBOM" Local="SGBOM" />
+        <Command Global="SGBOMEXPORT" Local="SGBOMEXPORT" />
+        <Command Global="SGUPDATE" Local="SGUPDATE" />
+        <Command Global="SGRELOADDB" Local="SGRELOADDB" />
+        <Command Global="SGSETTINGS" Local="SGSETTINGS" />
+        <Command Global="SGABOUT" Local="SGABOUT" />
+      </Commands>
+    </ComponentEntry>
+  </Components>
+
+</ApplicationPackage>

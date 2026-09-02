@@ -156,12 +156,16 @@ namespace StructureGen.Acad.Internal
             Placement placement,
             string layerName)
         {
-            BlockReference reference = new(Point3d.Origin, recordId) { Layer = layerName };
+            BlockReference reference = new(Point3d.Origin, recordId);
 
             try
             {
                 space.AppendEntity(reference);
                 transaction.AddNewlyCreatedDBObject(reference, true);
+
+                // The layer is assigned only once the reference belongs to a database, because the
+                // property resolves against that database's layer table.
+                reference.Layer = layerName;
 
                 // The reference is created at the origin and then transformed, rather than being
                 // given a position and a rotation. A block reference's own rotation turns about its

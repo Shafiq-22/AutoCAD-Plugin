@@ -7,6 +7,7 @@ using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.EditorInput;
 using Autodesk.AutoCAD.Runtime;
 using StructureGen.Bom;
+using StructureGen.Core.Diagnostics;
 using StructureGen.Core.Model;
 using StructureGen.Core.Results;
 using StructureGen.Core.Settings;
@@ -359,7 +360,7 @@ namespace StructureGen.Acad
         {
             try
             {
-                return Core.Diagnostics.FileLogger.DefaultDirectory();
+                return FileLogger.DefaultDirectory();
             }
             catch (ArgumentException)
             {

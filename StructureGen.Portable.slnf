@@ -9,7 +9,8 @@
       "src\\StructureGen.Excel\\StructureGen.Excel.csproj",
       "src\\StructureGen.Services\\StructureGen.Services.csproj",
       "src\\StructureGen.Tools.DataImport\\StructureGen.Tools.DataImport.csproj",
-      "tests\\StructureGen.Tests\\StructureGen.Tests.csproj"
+      "tests\\StructureGen.Tests\\StructureGen.Tests.csproj",
+      "tests\\StructureGen.CompileCheck\\StructureGen.CompileCheck.csproj"
     ]
   }
 }

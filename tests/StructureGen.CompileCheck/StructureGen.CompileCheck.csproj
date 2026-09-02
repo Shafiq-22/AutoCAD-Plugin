@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!--
+      A compile gate for the two projects that cannot be built without Windows.
+
+      StructureGen.Acad and StructureGen.UI are about fifteen hundred lines that a developer without
+      Windows, and a Linux build agent, otherwise cannot check at all. This project compiles their
+      source against hand-written stand-ins for the AutoCAD and WPF types they use, which verifies
+      every call they make into StructureGen's own code.
+
+      It is not a substitute for the real build. See Stubs/AutodeskApi.cs for exactly what this does
+      and does not prove.
+    -->
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>StructureGen.CompileCheck</RootNamespace>
+    <AssemblyName>StructureGen.CompileCheck</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+
+    <!-- CS0436 is expected: the stubs deliberately shadow types the framework also defines. -->
+    <NoWarn>$(NoWarn);CS1591;CS0436</NoWarn>
+
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Stubs/*.cs" />
+    <Compile Include="../../src/StructureGen.UI/ViewModels/*.cs" LinkBase="UI" />
+    <Compile Include="../../src/StructureGen.Acad/*.cs" LinkBase="Acad" />
+    <Compile Include="../../src/StructureGen.Acad/Internal/*.cs" LinkBase="Acad/Internal" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/StructureGen.Services/StructureGen.Services.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,5 +1,8 @@
 using System;
 using Autodesk.AutoCAD.Runtime;
+
+// Autodesk.AutoCAD.Runtime declares its own Exception type, so every catch of the framework's one
+// in this file is written out in full rather than left ambiguous.
 using StructureGen.Core.Diagnostics;
 using StructureGen.Core.Results;
 using StructureGen.Data;
@@ -53,7 +56,7 @@ namespace StructureGen.Acad
 
                 _context.Logger.Information("StructureGen loaded.");
             }
-            catch (Exception exception)
+            catch (System.Exception exception)
             {
                 // A plugin that throws out of Initialize is reported by AutoCAD with a message the
                 // user cannot act on. Catching here means they get an explanation instead, and the
@@ -64,7 +67,7 @@ namespace StructureGen.Acad
                 {
                     new FileLogger().Error("StructureGen failed to load.", exception);
                 }
-                catch (Exception)
+                catch (System.Exception)
                 {
                     // If even logging fails there is nothing further to try.
                 }

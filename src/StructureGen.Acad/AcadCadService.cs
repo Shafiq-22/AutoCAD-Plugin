@@ -199,7 +199,6 @@ namespace StructureGen.Acad
 
                 MetadataStore.EnsureRegisteredApplication(transaction, database);
 
-                BlockTable blockTable = (BlockTable)transaction.GetObject(database.BlockTableId, OpenMode.ForRead);
                 BlockTableRecord space =
                     (BlockTableRecord)transaction.GetObject(database.CurrentSpaceId, OpenMode.ForWrite);
 
@@ -297,7 +296,10 @@ namespace StructureGen.Acad
                         "Cad.NotAnElement", "The selected object is not a StructureGen element.");
                 }
 
-                RepresentationMode representation = definition.Representation;
+                RepresentationMode representation = definition.Representation == RepresentationMode.None
+                    ? RepresentationMode.Solid3D
+                    : definition.Representation;
+
                 BlockBuilder builder = new(scale);
                 string stamp = _context.Database.Stamp;
                 string version = PluginPaths.PluginVersion;

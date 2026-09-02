@@ -91,7 +91,7 @@ namespace StructureGen.Acad.Internal
         private static Result<List<ObjectId>> CollectCandidates(Document document, HarvestScope scope)
         {
             Editor editor = document.Editor;
-            SelectionFilter filter = MetadataStore.SelectionFilter();
+            SelectionFilter filter = MetadataStore.CreateSelectionFilter();
 
             PromptSelectionResult selection = scope switch
             {

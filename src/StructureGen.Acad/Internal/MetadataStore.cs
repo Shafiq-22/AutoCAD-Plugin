@@ -182,7 +182,7 @@ namespace StructureGen.Acad.Internal
 
         /// <summary>Builds the selection filter that finds every StructureGen object.</summary>
         /// <returns>The filter.</returns>
-        public static SelectionFilter SelectionFilter() => new(new[]
+        public static SelectionFilter CreateSelectionFilter() => new(new[]
         {
             new TypedValue((int)DxfCode.ExtendedDataRegAppName, ElementMetadataCodec.RegisteredApplicationName)
         });
