@@ -1,0 +1,39 @@
+## Build output
+[Bb]in/
+[Oo]bj/
+artifacts/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Rider / VS / VS Code
+.vs/
+.idea/
+.vscode/
+*.DotSettings.user
+
+## NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+## Test / coverage
+TestResults/
+*.trx
+coverage*.json
+coverage*.xml
+*.coverage
+
+## Logs and local settings
+logs/
+*.log
+local.settings.json
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Packaged bundle output
+*.bundle.zip

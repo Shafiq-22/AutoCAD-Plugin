@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>StructureGen.Geometry</RootNamespace>
+    <AssemblyName>StructureGen.Geometry</AssemblyName>
+    <Description>CAD-neutral element generators: parameter schemas, cross-section outlines and mass properties.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\StructureGen.Core\StructureGen.Core.csproj" />
+  </ItemGroup>
+
+</Project>

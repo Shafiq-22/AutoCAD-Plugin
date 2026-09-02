@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>StructureGen.Data</RootNamespace>
+    <AssemblyName>StructureGen.Data</AssemblyName>
+    <Description>Loading, validation and import of the replaceable structural section database.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\StructureGen.Core\StructureGen.Core.csproj" />
+  </ItemGroup>
+
+</Project>

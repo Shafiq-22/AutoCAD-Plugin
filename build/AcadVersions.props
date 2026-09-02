@@ -1,0 +1,54 @@
+<Project>
+
+  <!--
+    Central mapping between an AutoCAD product release, the AutoCAD Managed .NET API
+    package that must be compiled against, and the .NET runtime that release hosts.
+
+    Verified from the NuGet package metadata published by Autodesk:
+
+      AutoCAD.NET 25.0.1  -> "AutoCAD 2025 .Net API"  lib/net8.0
+      AutoCAD.NET 25.1.0  -> "AutoCAD 2026 .Net API"  lib/net8.0
+      AutoCAD.NET 25.1.1  -> "AutoCAD 2026 .Net API"  lib/net10.0
+      AutoCAD.NET 26.0.0  -> "AutoCAD 2027 .Net API"  lib/net10.0
+
+    Note the runtime shift *inside* the 2026 (R25.1) series. Because .NET Core
+    assemblies roll forward (a net8.0 assembly loads happily on a .NET 10 host, but
+    not the reverse) each release profile is compiled against the LOWEST runtime that
+    occurs in its series. One binary per series therefore covers every update of it.
+
+    Build a specific profile with:   dotnet build -p:AcadVersion=2027
+  -->
+
+  <PropertyGroup>
+    <AcadVersion Condition="'$(AcadVersion)' == ''">2026</AcadVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(AcadVersion)' == '2025'">
+    <AcadTargetFramework>net8.0-windows</AcadTargetFramework>
+    <AcadNetPackageVersion>25.0.1</AcadNetPackageVersion>
+    <AcadSeriesMin>R25.0</AcadSeriesMin>
+    <AcadSeriesMax>R25.0</AcadSeriesMax>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(AcadVersion)' == '2026'">
+    <AcadTargetFramework>net8.0-windows</AcadTargetFramework>
+    <AcadNetPackageVersion>25.1.0</AcadNetPackageVersion>
+    <AcadSeriesMin>R25.1</AcadSeriesMin>
+    <AcadSeriesMax>R25.1</AcadSeriesMax>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(AcadVersion)' == '2027'">
+    <AcadTargetFramework>net10.0-windows</AcadTargetFramework>
+    <AcadNetPackageVersion>26.0.0</AcadNetPackageVersion>
+    <AcadSeriesMin>R26.0</AcadSeriesMin>
+    <AcadSeriesMax>R26.0</AcadSeriesMax>
+  </PropertyGroup>
+
+  <Target Name="ValidateAcadVersion"
+          BeforeTargets="PrepareForBuild"
+          Condition="'$(IsAcadHostedProject)' == 'true'">
+    <Error Condition="'$(AcadTargetFramework)' == ''"
+           Text="Unknown AcadVersion '$(AcadVersion)'. Supported values: 2025, 2026, 2027. See build/AcadVersions.props." />
+  </Target>
+
+</Project>

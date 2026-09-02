@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>StructureGen.Core</RootNamespace>
+    <AssemblyName>StructureGen.Core</AssemblyName>
+    <Description>Platform-neutral domain model, units and validation primitives for StructureGen.</Description>
+  </PropertyGroup>
+
+</Project>
