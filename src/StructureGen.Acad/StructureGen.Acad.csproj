@@ -33,14 +33,25 @@
 
   <ItemGroup>
     <!--
-      ExcludeAssets="runtime" is essential. The Autodesk assemblies are compile-time references
-      only: AutoCAD loads its own copies, and shipping a second copy beside the plugin causes the
-      plugin to fail to load. It is also why no Autodesk binary ever appears in the build output or
-      in this repository.
+      Only the top-level "AutoCAD.NET" meta-package is referenced directly. Its own nuspec
+      exact-pins AutoCAD.NET.Core, whose nuspec in turn exact-pins AutoCAD.NET.Model, so both are
+      resolved transitively at the one version Autodesk actually shipped together - verified by
+      reading the nuspecs of all three packages at all three release versions this project targets.
+
+      Pinning AutoCAD.NET.Core and AutoCAD.NET.Model directly here, at the same version number as
+      the meta-package, was tried first and is wrong: Autodesk does not always keep the three
+      version numbers in lockstep. AutoCAD.NET 25.0.1 (a patch release of the meta-package only)
+      still requires AutoCAD.NET.Core exactly 25.0.0, which was never itself republished as 25.0.1.
+      A direct reference asking for "AutoCAD.NET.Core 25.0.1" therefore fails to restore, even
+      though the correct 25.0.0 is one transitive hop away. Leaving the version to transitive
+      resolution avoids depending on the three packages' version numbers staying synchronized.
+
+      ExcludeAssets="runtime" is essential regardless: the Autodesk assemblies are compile-time
+      references only. AutoCAD loads its own copies, and shipping a second copy beside the plugin
+      causes the plugin to fail to load. It is also why no Autodesk binary ever appears in the
+      build output or in this repository.
     -->
     <PackageReference Include="AutoCAD.NET" Version="$(AcadNetPackageVersion)" ExcludeAssets="runtime" PrivateAssets="all" />
-    <PackageReference Include="AutoCAD.NET.Core" Version="$(AcadNetPackageVersion)" ExcludeAssets="runtime" PrivateAssets="all" />
-    <PackageReference Include="AutoCAD.NET.Model" Version="$(AcadNetPackageVersion)" ExcludeAssets="runtime" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
