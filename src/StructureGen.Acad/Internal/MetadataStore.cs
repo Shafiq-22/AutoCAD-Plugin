@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Autodesk.AutoCAD.DatabaseServices;
+using Autodesk.AutoCAD.EditorInput;
 using StructureGen.Core.Model;
 using StructureGen.Core.Results;
 using StructureGen.Services;

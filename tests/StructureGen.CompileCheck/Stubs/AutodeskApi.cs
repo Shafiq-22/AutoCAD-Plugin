@@ -243,8 +243,6 @@ namespace Autodesk.AutoCAD.DatabaseServices
         public bool XlateReferences { get; set; }
     }
 
-    public sealed class SelectionFilter { public SelectionFilter(TypedValue[] values) { } }
-
     public sealed class ViewTableRecord : DBObject
     {
         public Point2d CenterPoint { get; set; }
@@ -353,6 +351,11 @@ namespace Autodesk.AutoCAD.EditorInput
         public IEnumerator<SelectedObject> GetEnumerator() => new List<SelectedObject>().GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
+
+    // Really lives in EditorInput, not DatabaseServices alongside TypedValue - this was the wrong
+    // assumption that let the real "using" go missing in StructureGen.Acad, since the stub agreed
+    // with the mistake instead of catching it. See tests/StructureGen.CompileCheck/README.md.
+    public sealed class SelectionFilter { public SelectionFilter(DatabaseServices.TypedValue[] values) { } }
 
     public class PromptOptions { public PromptOptions(string message) { } }
 
