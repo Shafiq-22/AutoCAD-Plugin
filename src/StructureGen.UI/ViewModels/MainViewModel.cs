@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using StructureGen.Core.Model;
 using StructureGen.Core.Results;
 using StructureGen.Services;
@@ -182,6 +183,53 @@ namespace StructureGen.UI.ViewModels
             {
                 _cad.WriteMessage("  " + message);
             }
+
+            if (summary.ObjectCount == 0)
+            {
+                // A run that draws nothing is a failure however the plumbing classifies it. Every
+                // reason for one - no generator for the category, an outline the geometry engine
+                // refused - is reported per item and leaves the run itself "successful" with an
+                // empty result, so up to here it has been written only to the command line. That
+                // is not good enough: a drafter working with the command line collapsed, which is
+                // common, sees a palette that looks like it did nothing at all and has no thread
+                // to pull. So it is said again, in a dialog, with the reasons.
+                _cad.ShowMessage("StructureGen", NothingWasCreated(summary));
+            }
+        }
+
+        /// <summary>Explains a generation run that produced no geometry.</summary>
+        /// <param name="summary">What the run reported.</param>
+        /// <returns>Text naming the reasons, or saying plainly that none were given.</returns>
+        private static string NothingWasCreated(GenerationSummary summary)
+        {
+            System.Text.StringBuilder text = new();
+            text.AppendLine("Nothing was drawn. No object was added to the drawing.");
+            text.AppendLine();
+
+            IReadOnlyList<ValidationMessage> reasons = summary.Report.Messages
+                .Where(message => message.Severity != Severity.Info)
+                .ToList();
+
+            if (reasons.Count > 0)
+            {
+                text.AppendLine(reasons.Count == 1 ? "The reason given was:" : "The reasons given were:");
+
+                foreach (ValidationMessage message in reasons)
+                {
+                    text.AppendLine($"  - {message.Message}");
+                }
+            }
+            else
+            {
+                text.AppendLine(
+                    "No reason was reported, which should not happen. Please raise an issue with the " +
+                    "log file attached.");
+            }
+
+            text.AppendLine();
+            text.Append("Full detail is in the log file: " + Core.Diagnostics.FileLogger.DefaultDirectory());
+
+            return text.ToString();
         }
 
         private void ValidateList()
