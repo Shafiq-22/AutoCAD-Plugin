@@ -436,6 +436,13 @@
                             <TextBox Width="80" Text="{Binding Settings.LengthGroupingToleranceMm, UpdateSourceTrigger=LostFocus}" />
                         </StackPanel>
 
+                        <TextBlock Style="{StaticResource SectionHeading}" Text="Drawing view" />
+
+                        <CheckBox Content="Zoom to show newly generated elements"
+                                  IsChecked="{Binding Settings.ZoomToNewElements}" Margin="0,2" />
+                        <TextBlock Style="{StaticResource Hint}" TextWrapping="Wrap"
+                                   Text="Elements are placed at the world origin unless you pick a point, and a member several metres long falls outside the initial view of a new drawing. With this off, use ZOOM then E after generating." />
+
                         <CheckBox Content="Write verbose diagnostics to the log file"
                                   IsChecked="{Binding Settings.VerboseLogging}" Margin="0,8,0,0" />
 

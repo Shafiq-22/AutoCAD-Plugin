@@ -47,6 +47,15 @@
     <!-- The palette markup is tested as data. -->
     <None Include="..\..\src\StructureGen.UI\Views\StructureGenView.xaml"
           LinkBase="ui" CopyToOutputDirectory="PreserveNewest" />
+
+    <!--
+      The autoloader manifest and the command source are tested as data too. The AutoCAD layer
+      cannot be compiled here, so the only way to check that the two agree is to read them.
+    -->
+    <None Include="..\..\build\PackageContents.xml"
+          LinkBase="bundle" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\src\StructureGen.Acad\StructureGenCommands.cs"
+          LinkBase="bundle" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

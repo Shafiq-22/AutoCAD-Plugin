@@ -47,6 +47,7 @@
         <Command Global="STRUCTUREGEN" Local="STRUCTUREGEN" />
         <Command Global="SGEDIT" Local="SGEDIT" />
         <Command Global="SGINFO" Local="SGINFO" />
+        <Command Global="SGSHOW" Local="SGSHOW" />
         <Command Global="SGBOM" Local="SGBOM" />
         <Command Global="SGBOMEXPORT" Local="SGBOMEXPORT" />
         <Command Global="SGUPDATE" Local="SGUPDATE" />
@@ -71,6 +72,7 @@
         <Command Global="STRUCTUREGEN" Local="STRUCTUREGEN" />
         <Command Global="SGEDIT" Local="SGEDIT" />
         <Command Global="SGINFO" Local="SGINFO" />
+        <Command Global="SGSHOW" Local="SGSHOW" />
         <Command Global="SGBOM" Local="SGBOM" />
         <Command Global="SGBOMEXPORT" Local="SGBOMEXPORT" />
         <Command Global="SGUPDATE" Local="SGUPDATE" />
@@ -95,6 +97,7 @@
         <Command Global="STRUCTUREGEN" Local="STRUCTUREGEN" />
         <Command Global="SGEDIT" Local="SGEDIT" />
         <Command Global="SGINFO" Local="SGINFO" />
+        <Command Global="SGSHOW" Local="SGSHOW" />
         <Command Global="SGBOM" Local="SGBOM" />
         <Command Global="SGBOMEXPORT" Local="SGBOMEXPORT" />
         <Command Global="SGUPDATE" Local="SGUPDATE" />

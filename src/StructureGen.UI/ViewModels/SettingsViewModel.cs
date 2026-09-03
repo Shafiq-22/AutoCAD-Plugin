@@ -167,6 +167,20 @@ namespace StructureGen.UI.ViewModels
             }
         }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether the view is moved to show newly generated
+        /// elements.
+        /// </summary>
+        public bool ZoomToNewElements
+        {
+            get => _context.Settings.ZoomToNewElements;
+            set
+            {
+                _context.Settings.ZoomToNewElements = value;
+                Raise();
+            }
+        }
+
         /// <summary>Gets or sets a value indicating whether verbose diagnostics are written to the log.</summary>
         public bool VerboseLogging
         {

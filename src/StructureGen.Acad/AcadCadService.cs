@@ -187,6 +187,7 @@ namespace StructureGen.Acad
 
             ValidationReport report = new();
             Dictionary<Guid, IReadOnlyList<string>> created = new();
+            Extents3d? generatedExtents = null;
             Database database = document.Database;
             double scale = ScaleFor(database);
 
@@ -209,7 +210,8 @@ namespace StructureGen.Acad
                 foreach (ElementDefinition definition in request.Definitions)
                 {
                     List<string> handles = GenerateOne(
-                        transaction, database, space, builder, definition, request, stamp, version, report);
+                        transaction, database, space, builder, definition, request,
+                        stamp, version, report, ref generatedExtents);
 
                     if (handles.Count > 0)
                     {
@@ -218,14 +220,29 @@ namespace StructureGen.Acad
                 }
 
                 MetadataStore.StampDrawing(transaction, database, stamp, version);
+
+                // A palette is modeless, so this work does not run inside a command and AutoCAD does
+                // not repaint on its own afterwards. Without this the new objects exist, are
+                // selectable and appear in the schedule, but are not drawn until something else
+                // happens to force a redraw - which reads as "nothing was created".
+                transaction.TransactionManager.QueueForGraphicsFlush();
                 transaction.Commit();
 
                 GenerationSummary summary = new(created, builder.Created, builder.Reused, report);
                 _logger.Information(summary.ToDisplayString());
 
-                if (request.ZoomToResult && created.Count > 0)
+                if (created.Count > 0)
                 {
-                    ZoomExtents(document);
+                    if (request.ZoomToResult && generatedExtents.HasValue)
+                    {
+                        ZoomTo(document, generatedExtents.Value);
+                    }
+                    else
+                    {
+                        document.Editor.UpdateScreen();
+                    }
+
+                    ReportWhereItWent(request, generatedExtents, report);
                 }
 
                 return Result<GenerationSummary>.Success(summary, report);
@@ -481,6 +498,66 @@ namespace StructureGen.Acad
                 null);
         }
 
+        /// <summary>
+        /// Finds every StructureGen element in a drawing and moves the view to show them all.
+        /// </summary>
+        /// <param name="document">The drawing to search. May be <see langword="null"/>.</param>
+        /// <param name="count">Receives how many generated objects the drawing holds.</param>
+        /// <returns>
+        /// The box the elements occupy, or a failure explaining why the view could not be moved.
+        /// A drawing holding no generated objects is not a failure; it reports a count of zero.
+        /// </returns>
+        public static Result<Extents3d> FrameGeneratedElements(Document? document, out int count)
+        {
+            count = 0;
+
+            if (document is null)
+            {
+                return Result<Extents3d>.Failure("Cad.NoDocument", NoDocumentMessage);
+            }
+
+            Editor editor = document.Editor;
+            PromptSelectionResult selection = editor.SelectAll(MetadataStore.CreateSelectionFilter());
+
+            if (selection.Status != PromptStatus.OK || selection.Value is null || selection.Value.Count == 0)
+            {
+                return Result<Extents3d>.Failure(
+                    "Cad.NothingGenerated", "the drawing contains no StructureGen elements.");
+            }
+
+            count = selection.Value.Count;
+            Extents3d? extents = null;
+
+            using (DocumentLock documentLock = document.LockDocument())
+            using (Transaction transaction = document.Database.TransactionManager.StartTransaction())
+            {
+                foreach (SelectedObject? selected in selection.Value)
+                {
+                    if (selected is null || selected.ObjectId.IsNull || selected.ObjectId.IsErased)
+                    {
+                        continue;
+                    }
+
+                    if (transaction.GetObject(selected.ObjectId, OpenMode.ForRead) is Entity entity)
+                    {
+                        Accumulate(ref extents, entity);
+                    }
+                }
+
+                transaction.Commit();
+            }
+
+            if (!extents.HasValue)
+            {
+                return Result<Extents3d>.Failure(
+                    "Cad.NoExtents",
+                    "none of them could report a position, so the view was left alone.");
+            }
+
+            ZoomTo(document, extents.Value);
+            return Result<Extents3d>.Success(extents.Value);
+        }
+
         /// <summary>Zooms the current view to the drawing's extents.</summary>
         /// <param name="document">The document to zoom.</param>
         public static void ZoomExtents(Document document)
@@ -496,22 +573,87 @@ namespace StructureGen.Acad
             Point3d minimum = database.Extmin;
             Point3d maximum = database.Extmax;
 
-            double width = Math.Abs(maximum.X - minimum.X);
-            double height = Math.Abs(maximum.Y - minimum.Y);
+            if (maximum.X < minimum.X || maximum.Y < minimum.Y || maximum.Z < minimum.Z)
+            {
+                // An empty drawing reports an inverted, meaningless pair of extents.
+                return;
+            }
 
-            if (width <= 1e-9 || height <= 1e-9)
+            ZoomTo(document, new Extents3d(minimum, maximum));
+        }
+
+        /// <summary>Moves the current view so that a given box fills it.</summary>
+        /// <param name="document">The document whose view is to move.</param>
+        /// <param name="extents">The box to bring into view, in world coordinates.</param>
+        /// <remarks>
+        /// The box is measured in the plane of the current view rather than in world XY, so this
+        /// behaves correctly in an isometric or a rotated view instead of framing the wrong
+        /// rectangle. The view's own width and height give the viewport's aspect ratio, which is
+        /// preserved: setting width and height independently makes AutoCAD reconcile them itself,
+        /// and it does so by growing one of them, which can push the geometry back off the screen.
+        /// </remarks>
+        public static void ZoomTo(Document document, Extents3d extents)
+        {
+            if (document is null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
+
+            Editor editor = document.Editor;
+            using ViewTableRecord view = editor.GetCurrentView();
+
+            // World to view: undo the view twist, move the target to the origin, then rotate the
+            // view direction onto Z. Applied in that order to a world point, it gives the point's
+            // position on the screen plane.
+            Matrix3d viewToWorld =
+                Matrix3d.Rotation(-view.ViewTwist, view.ViewDirection, view.Target) *
+                Matrix3d.Displacement(view.Target - Point3d.Origin) *
+                Matrix3d.PlaneToWorld(view.ViewDirection);
+
+            Matrix3d worldToView = viewToWorld.Inverse();
+
+            Extents3d viewed = new(extents.MinPoint, extents.MaxPoint);
+            viewed.TransformBy(worldToView);
+
+            double width = viewed.MaxPoint.X - viewed.MinPoint.X;
+            double height = viewed.MaxPoint.Y - viewed.MinPoint.Y;
+
+            // A single flat element seen edge on has no extent in one direction. It still has to be
+            // framed, so the degenerate direction borrows from the other one.
+            double reference = Math.Max(width, height);
+
+            if (reference <= 1e-9)
             {
                 return;
             }
 
-            using ViewTableRecord view = document.Editor.GetCurrentView();
+            width = Math.Max(width, reference * 0.05d);
+            height = Math.Max(height, reference * 0.05d);
 
             // A tenth of a margin keeps the geometry off the edge of the viewport.
-            view.CenterPoint = new Point2d((minimum.X + maximum.X) / 2d, (minimum.Y + maximum.Y) / 2d);
-            view.Width = width * 1.1d;
-            view.Height = height * 1.1d;
+            width *= 1.1d;
+            height *= 1.1d;
 
-            document.Editor.SetCurrentView(view);
+            double aspect = view.Height > 1e-12 ? view.Width / view.Height : 1d;
+
+            if (width / height > aspect)
+            {
+                height = width / aspect;
+            }
+            else
+            {
+                width = height * aspect;
+            }
+
+            view.CenterPoint = new Point2d(
+                (viewed.MinPoint.X + viewed.MaxPoint.X) / 2d,
+                (viewed.MinPoint.Y + viewed.MaxPoint.Y) / 2d);
+
+            view.Width = width;
+            view.Height = height;
+
+            editor.SetCurrentView(view);
+            editor.UpdateScreen();
         }
 
         private List<string> GenerateOne(
@@ -523,7 +665,8 @@ namespace StructureGen.Acad
             GenerationRequest request,
             string stamp,
             string version,
-            ValidationReport report)
+            ValidationReport report,
+            ref Extents3d? extents)
         {
             List<string> handles = new();
 
@@ -575,9 +718,66 @@ namespace StructureGen.Acad
                     ElementMetadataCodec.Encode(occurrence, stamp, version), writeSelectionMarker: true);
 
                 handles.Add(reference.Handle.ToString());
+                Accumulate(ref extents, reference);
             }
 
             return handles;
+        }
+
+        /// <summary>Grows a running bounding box to include one more entity.</summary>
+        /// <param name="extents">The running bounding box, empty until the first entity contributes.</param>
+        /// <param name="entity">The entity to include.</param>
+        /// <remarks>
+        /// An entity that cannot report its extents is skipped rather than allowed to fail the run.
+        /// AutoCAD raises for an entity with no geometry, which a block reference to an empty
+        /// definition legitimately is, and losing the view adjustment is a far smaller problem than
+        /// losing the geometry that was just generated.
+        /// </remarks>
+        private static void Accumulate(ref Extents3d? extents, Entity entity)
+        {
+            try
+            {
+                Extents3d entityExtents = entity.GeometricExtents;
+
+                if (extents.HasValue)
+                {
+                    Extents3d combined = extents.Value;
+                    combined.AddExtents(entityExtents);
+                    extents = combined;
+                }
+                else
+                {
+                    extents = entityExtents;
+                }
+            }
+            catch (Autodesk.AutoCAD.Runtime.Exception)
+            {
+            }
+        }
+
+        /// <summary>
+        /// Says where the generated elements went, so an empty looking drawing is explained rather
+        /// than mysterious.
+        /// </summary>
+        /// <param name="request">The request that was run.</param>
+        /// <param name="extents">The bounding box of what was created, if it could be measured.</param>
+        /// <param name="report">The report to add the note to.</param>
+        private static void ReportWhereItWent(
+            GenerationRequest request, Extents3d? extents, ValidationReport report)
+        {
+            if (request.ZoomToResult || !extents.HasValue)
+            {
+                return;
+            }
+
+            Point3d minimum = extents.Value.MinPoint;
+            Point3d maximum = extents.Value.MaxPoint;
+
+            report.AddInfo(
+                "Cad.GeneratedOffScreen",
+                "The new elements span " +
+                $"X {minimum.X:0.#} to {maximum.X:0.#}, Y {minimum.Y:0.#} to {maximum.Y:0.#} in drawing units. " +
+                "Zooming to new elements is switched off in Settings, so type ZOOM then E to bring them into view.");
         }
 
         private void WarnAboutUnitlessDrawing(Database database, ValidationReport report)

@@ -176,6 +176,7 @@ Detail, and an honest account of what has and has not been verified:
 | `STRUCTUREGEN` | Opens the palette |
 | `SGEDIT` | Loads a drawn element back into the palette |
 | `SGINFO` | Prints everything known about a selected element |
+| `SGSHOW` | Brings every StructureGen element in the drawing into view |
 | `SGBOM` | Builds the schedule; offers a table or an export |
 | `SGBOMEXPORT` | Builds the schedule and exports it straight to a workbook |
 | `SGUPDATE` | Rebuilds selected elements from their stored parameters |

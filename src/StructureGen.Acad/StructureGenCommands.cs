@@ -4,7 +4,9 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using Autodesk.AutoCAD.ApplicationServices;
+using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
+using Autodesk.AutoCAD.Geometry;
 using Autodesk.AutoCAD.Runtime;
 using StructureGen.Bom;
 using StructureGen.Core.Diagnostics;
@@ -90,6 +92,45 @@ namespace StructureGen.Acad
             editor.WriteMessage($"\n  Weight       : {mass.Explanation}");
             editor.WriteMessage($"\n  Source data  : {(definition.SourceDataVerified ? "verified" : "NOT VERIFIED")}");
             editor.WriteMessage($"\n  Created      : {definition.CreatedUtc.ToLocalTime():yyyy-MM-dd HH:mm}");
+        });
+
+        /// <summary>Brings every StructureGen element in the drawing into view.</summary>
+        /// <remarks>
+        /// This exists because "I generated something and the drawing still looks empty" has two
+        /// quite different causes and the user cannot tell them apart. Either nothing was created,
+        /// or something was created a long way outside the current view - which is the normal
+        /// outcome of generating a six metre member at the world origin in a drawing whose initial
+        /// view is a few hundred millimetres wide. This command reports the count, so the first case
+        /// is named outright, and moves the view, so the second one is over.
+        /// </remarks>
+        [CommandMethod("SGSHOW", CommandFlags.Modal)]
+        public void ShowElements() => Run("SGSHOW", editor =>
+        {
+            Document? document = AcadApplication.DocumentManager.MdiActiveDocument;
+            Result<Extents3d> framed = AcadCadService.FrameGeneratedElements(document, out int count);
+
+            if (count == 0)
+            {
+                editor.WriteMessage(
+                    "\nThis drawing contains no StructureGen elements. Nothing has been generated into it yet, " +
+                    "or the elements were erased. Open the palette with STRUCTUREGEN, add an item to the list " +
+                    "and choose Generate All.");
+                return;
+            }
+
+            if (framed.IsFailure)
+            {
+                editor.WriteMessage($"\n{count} StructureGen element(s) found, but {framed.ErrorMessage}");
+                return;
+            }
+
+            Point3d minimum = framed.Value.MinPoint;
+            Point3d maximum = framed.Value.MaxPoint;
+
+            editor.WriteMessage(
+                $"\n{count} StructureGen element(s) found, spanning X {minimum.X:0.#} to {maximum.X:0.#}, " +
+                $"Y {minimum.Y:0.#} to {maximum.Y:0.#}, Z {minimum.Z:0.#} to {maximum.Z:0.#} in drawing units. " +
+                "The view has been moved to show them.");
         });
 
         /// <summary>Builds a bill of materials from the drawing and offers what to do with it.</summary>

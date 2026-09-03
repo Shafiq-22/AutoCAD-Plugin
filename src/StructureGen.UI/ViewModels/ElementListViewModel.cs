@@ -206,7 +206,7 @@ namespace StructureGen.UI.ViewModels
             {
                 CreateLayers = true,
                 LayerPrefix = _context.Settings.LayerPrefix,
-                ZoomToResult = false
+                ZoomToResult = _context.Settings.ZoomToNewElements
             };
 
             return _cad.Generate(request);

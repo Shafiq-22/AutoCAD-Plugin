@@ -51,6 +51,8 @@ namespace Autodesk.AutoCAD.Geometry
         public Point3d(double x, double y, double z) { X = x; Y = y; Z = z; }
         public double X { get; } public double Y { get; } public double Z { get; }
         public static Point3d Origin => new(0, 0, 0);
+        public static Vector3d operator -(Point3d left, Point3d right) =>
+            new(left.X - right.X, left.Y - right.Y, left.Z - right.Z);
     }
 
     public readonly struct Vector3d
@@ -65,10 +67,22 @@ namespace Autodesk.AutoCAD.Geometry
         public Vector3d TransformBy(Matrix3d m) => this;
     }
 
+    public struct Extents3d
+    {
+        public Extents3d(Point3d minimum, Point3d maximum) { MinPoint = minimum; MaxPoint = maximum; }
+        public Point3d MinPoint { get; private set; }
+        public Point3d MaxPoint { get; private set; }
+        public void AddExtents(Extents3d other) { }
+        public void TransformBy(Matrix3d m) { }
+    }
+
     public sealed class Matrix3d
     {
         public static Matrix3d Displacement(Vector3d v) => new();
         public static Matrix3d Rotation(double angle, Vector3d axis, Point3d centre) => new();
+        public static Matrix3d PlaneToWorld(Vector3d normal) => new();
+        public Matrix3d Inverse() => this;
+        public static Matrix3d operator *(Matrix3d left, Matrix3d right) => left;
         public static Matrix3d AlignCoordinateSystem(
             Point3d fo, Vector3d fx, Vector3d fy, Vector3d fz,
             Point3d to, Vector3d tx, Vector3d ty, Vector3d tz) => new();
@@ -152,6 +166,7 @@ namespace Autodesk.AutoCAD.DatabaseServices
         public ResultBuffer? XData { get; set; }
         public void TransformBy(Matrix3d m) { }
         public void SetDatabaseDefaults(Database? db) { }
+        public Extents3d GeometricExtents => default;
     }
 
     public sealed class DBObjectCollection : IDisposable, IEnumerable
@@ -248,6 +263,9 @@ namespace Autodesk.AutoCAD.DatabaseServices
         public Point2d CenterPoint { get; set; }
         public double Width { get; set; }
         public double Height { get; set; }
+        public double ViewTwist { get; set; }
+        public Point3d Target { get; set; }
+        public Vector3d ViewDirection { get; set; }
     }
 
     public sealed class Layout : DBObject
@@ -294,11 +312,16 @@ namespace Autodesk.AutoCAD.DatabaseServices
     {
         public DBObject GetObject(ObjectId id, OpenMode mode) => new();
         public void AddNewlyCreatedDBObject(DBObject o, bool add) { }
+        public TransactionManager TransactionManager => new();
         public void Commit() { }
         public void Dispose() { }
     }
 
-    public sealed class TransactionManager { public Transaction StartTransaction() => new(); }
+    public sealed class TransactionManager
+    {
+        public Transaction StartTransaction() => new();
+        public void QueueForGraphicsFlush() { }
+    }
 
     public sealed class Database
     {
@@ -403,6 +426,8 @@ namespace Autodesk.AutoCAD.EditorInput
         public void WriteMessage(string message) { }
         public ViewTableRecord GetCurrentView() => new();
         public void SetCurrentView(ViewTableRecord view) { }
+        public void UpdateScreen() { }
+        public void Regen() { }
     }
 }
 

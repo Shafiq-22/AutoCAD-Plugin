@@ -137,7 +137,8 @@ has not been verified.
 | 6 | Tick custom mode, edit it | Now editable, and a warning appears |
 | 7 | Untick, press Reset | The published values return |
 | 8 | Set length 6000, quantity 4, Add to list | Row appears, running total shows 1012.8 kg |
-| 9 | Press Generate all | Four beams appear on layer `SG-i-section` |
+| 9 | Press Generate all | Four beams appear on layer `SG-i-section`, and the view moves to show them |
+| 9a | Type `SGSHOW` | It reports 4 elements and their extents, and frames them |
 | 10 | Press Pick start/end, pick two points | The length is measured from the drawing |
 | 11 | Type `SGINFO`, select a beam | Profile, dimensions and weight calculation are printed |
 | 12 | Type `SGEDIT`, select a beam, change length, press Update in drawing | Geometry rebuilds, identity preserved |

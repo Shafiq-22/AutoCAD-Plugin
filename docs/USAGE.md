@@ -145,6 +145,7 @@ To convert your own spreadsheets, see `docs/DATABASE.md`.
 | `STRUCTUREGEN` | Opens the palette |
 | `SGEDIT` | Loads a drawn element into the palette for editing |
 | `SGINFO` | Prints everything known about a selected element |
+| `SGSHOW` | Brings every StructureGen element in the drawing into view |
 | `SGBOM` | Builds the schedule and offers a table or an export |
 | `SGBOMEXPORT` | Builds the schedule and exports it straight to a workbook |
 | `SGUPDATE` | Rebuilds selected elements from their stored parameters |
@@ -172,6 +173,7 @@ To convert your own spreadsheets, see `docs/DATABASE.md`.
 | Mass unit | The unit masses are shown in |
 | Default detail | Detail level for new items |
 | Layer prefix | Prefix for automatic layers, default `SG-` |
+| Zoom to show newly generated elements | Whether the view moves to the new geometry, default on |
 | Table text height | Text height for drawn schedule tables |
 | Collapse identical members | Whether identical members share one schedule line |
 | Different layers, different lines | Whether the layer distinguishes two lines |
@@ -179,6 +181,31 @@ To convert your own spreadsheets, see `docs/DATABASE.md`.
 | Verbose logging | More detail in the log file |
 
 Settings live in `%APPDATA%\StructureGen\settings.json` and survive upgrades.
+
+## "I generated something and the drawing still looks empty"
+
+This is the most common first surprise, and it usually is not a failure.
+
+An element is placed at the **world origin** unless you pick a point for it, and it is drawn along
+the positive X axis. A new metric drawing opens with a view a few hundred millimetres wide, so a six
+metre beam starting at the origin is almost entirely outside it. The beam is there; the view is not
+looking at it.
+
+StructureGen zooms to what it just created, which normally means you never see this. If you have
+switched that off in Settings, or the view has since moved:
+
+1. Type **`SGSHOW`**. It reports how many StructureGen elements the drawing contains and moves the
+   view to show them. If it reports **zero**, nothing was created and the problem is a real one -
+   read the message the palette printed on the command line.
+2. Or type **`ZOOM`** then **`E`** for the whole drawing extents.
+
+Two further things worth checking if `SGSHOW` finds elements but you still cannot see them:
+
+- **A frozen or switched-off layer.** Elements go on a layer named after their category, `SG-i-section`
+  by default. Open the Layer Properties Manager and check the `SG-` layers are on and thawed.
+- **A 3D solid in a plan view.** A member generated as `Solid3D` and viewed from the top looks like a
+  rectangle, which in a 2D wireframe visual style can be easy to mistake for nothing. Try
+  View > 3D Views > SW Isometric.
 
 ## When something goes wrong
 

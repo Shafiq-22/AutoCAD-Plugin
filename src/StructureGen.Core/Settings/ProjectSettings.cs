@@ -61,6 +61,19 @@ namespace StructureGen.Core.Settings
         /// <summary>Gets or sets the folder last used for an Excel export.</summary>
         public string? LastExportDirectory { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether the view is moved to show newly generated
+        /// elements.
+        /// </summary>
+        /// <remarks>
+        /// This defaults to on because the alternative is worse than it sounds. A member is placed
+        /// at the world origin unless the user picked a point, and a six metre beam drawn from the
+        /// origin is entirely outside the view of a freshly opened metric template, whose initial
+        /// view is a few hundred millimetres across. Nothing is wrong in that case and nothing is
+        /// missing, but the drawing looks empty, which is indistinguishable from a failure.
+        /// </remarks>
+        public bool ZoomToNewElements { get; set; } = true;
+
         /// <summary>Gets or sets a value indicating whether verbose diagnostics are written to the log.</summary>
         public bool VerboseLogging { get; set; }
 
@@ -81,6 +94,7 @@ namespace StructureGen.Core.Settings
             BomTextHeight = BomTextHeight,
             BomTextStyle = BomTextStyle,
             LastExportDirectory = LastExportDirectory,
+            ZoomToNewElements = ZoomToNewElements,
             VerboseLogging = VerboseLogging
         };
     }
