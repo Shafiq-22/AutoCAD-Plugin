@@ -536,11 +536,23 @@ def american_record(
         outline = nominal_area(dimensions, family)
         deviation = abs(outline - area) / area * 100.0
 
-        if deviation > 8.0:
-            # A deviation this large is not a modelling limit. Every family here was measured,
-            # and none of them is worse than about five per cent, so a shape that misses by more
-            # than eight is a sign that a column has been read wrongly - which is exactly what
-            # this compilation exists to make impossible to ship quietly.
+        # Whether a large deviation is a modelling limit or a mis-read column is answered by the
+        # OTHER figure the table publishes for the same shape. A column read into the wrong field
+        # produces dimensions that agree with nothing, so the outline drawn from them misses the
+        # tabulated mass as badly as it misses the tabulated area. A modelling limit - a flange
+        # taper or a fillet the source does not describe - leaves the dimensions themselves
+        # sound, so the outline still accounts for the mass.
+        #
+        # That distinction is not hypothetical. AISC's M3X2.9 tabulates an area of 0.914 in2
+        # against a mass of 2.9 lb/ft, which implies 0.852 in2; the two disagree by 7.3 per cent
+        # with each other, and the outline drawn from the published dimensions sits 2.4 per cent
+        # from the mass and 9.0 per cent from the area. The dimensions are fine and the area is
+        # the odd figure out, so the record ships with its area demoted rather than failing the
+        # compilation.
+        implied = weight / (STEEL_DENSITY_LB_IN3 * 12.0)
+        against_mass = abs(outline - implied) / implied * 100.0
+
+        if deviation > 8.0 and against_mass > 8.0:
             report.mangled(name, deviation)
 
         if deviation > 2.0:
@@ -877,8 +889,9 @@ class Report:
 
         if self.mangled_areas:
             print(
-                f"\nFAILED: {len(self.mangled_areas)} record(s) miss their tabulated area by more "
-                "than 8%, which is too far to be a modelling limit:"
+                f"\nFAILED: {len(self.mangled_areas)} record(s) miss both their tabulated area and "
+                "their tabulated mass by more than 8%, so their dimensions are not merely hard to "
+                "model - they do not describe the shape at all:"
             )
             for name, error in sorted(self.mangled_areas, key=lambda x: -x[1])[:20]:
                 print(f"    {name}: {error:.1f}%")

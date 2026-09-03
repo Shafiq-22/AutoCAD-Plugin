@@ -42,8 +42,10 @@ Neither is an Autodesk product and no Autodesk data is involved.
 - **It never ships an area its own outline cannot reproduce.** A published area is what lets the
   test suite check the profile StructureGen draws against the table it came from, so an area that
   misses by more than 2% is moved to `properties`, where it is informational, and the record says
-  why. An area that misses by more than 8% is not a modelling limit — it is a mangled column — and
-  the compilation fails.
+  why. Whether a larger miss is a modelling limit or a mis-read column is settled by the other
+  figure the table publishes for the same shape: a mis-read column produces dimensions that agree
+  with nothing, so the outline misses the tabulated *mass* too. Missing both by more than 8% fails
+  the compilation.
 
 ## Two derivations, and why they are not guesses
 
