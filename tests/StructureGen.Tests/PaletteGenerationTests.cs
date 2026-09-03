@@ -94,6 +94,50 @@ namespace StructureGen.Tests
             Assert.Contains(cad.Messages, message => message.Contains("does not declare its insertion units"));
         }
 
+        [Fact]
+        public void An_exception_under_a_palette_button_reaches_the_user_instead_of_vanishing()
+        {
+            // The failure this guards against is specific to where the palette runs. A command
+            // method has a catch-all around it; a button on a modeless palette runs on the WPF
+            // dispatcher, which inside AutoCAD's palette host swallows what escapes - while the
+            // transaction underneath rolls the operation back on disposal. Nothing drawn, nothing
+            // said.
+            List<Exception> caught = new();
+            RelayCommand.UnhandledException = caught.Add;
+
+            try
+            {
+                FakeCadService cad = Cad(_ => throw new InvalidOperationException("the drawing is read-only"));
+                MainViewModel palette = Palette(cad);
+
+                palette.GenerateAllCommand.Execute(null);
+
+                Exception reported = Assert.Single(caught);
+                Assert.Equal("the drawing is read-only", reported.Message);
+            }
+            finally
+            {
+                RelayCommand.UnhandledException = null;
+            }
+        }
+
+        [Fact]
+        public void With_no_handler_installed_an_exception_is_left_exactly_as_it_was()
+        {
+            // The net must not become a way for a defect to go unnoticed anywhere else. With no
+            // handler installed the exception filter does not run, so nothing is caught and the
+            // original stack survives for a debugger or a test to see.
+            RelayCommand.UnhandledException = null;
+
+            FakeCadService cad = Cad(_ => throw new InvalidOperationException("boom"));
+            MainViewModel palette = Palette(cad);
+
+            InvalidOperationException thrown =
+                Assert.Throws<InvalidOperationException>(() => palette.GenerateAllCommand.Execute(null));
+
+            Assert.Equal("boom", thrown.Message);
+        }
+
         private static Func<GenerationRequest, Result<GenerationSummary>> EmptyRun(ValidationReport report) =>
             _ => Result<GenerationSummary>.Success(
                 new GenerationSummary(new Dictionary<Guid, IReadOnlyList<string>>(), 0, 0, report),

@@ -1,5 +1,6 @@
 using System;
 using Autodesk.AutoCAD.Windows;
+using StructureGen.Core.Diagnostics;
 using StructureGen.Core.Model;
 using StructureGen.Services;
 using StructureGen.UI.ViewModels;
@@ -42,6 +43,7 @@ namespace StructureGen.Acad
 
             if (_paletteSet is null)
             {
+                InstallExceptionNet(context, cad);
                 _viewModel = new MainViewModel(context, cad);
 
                 StructureGenView view = new(_viewModel);
@@ -72,6 +74,36 @@ namespace StructureGen.Acad
 
         /// <summary>Brings the settings tab to the front.</summary>
         public static void ShowSettings() => _viewModel?.ShowSettings();
+
+        /// <summary>
+        /// Makes sure an exception thrown under a palette button reaches the user.
+        /// </summary>
+        /// <param name="context">The application object graph, for its logger.</param>
+        /// <param name="cad">The CAD host, for showing the message.</param>
+        /// <remarks>
+        /// A command method has AutoCAD's own error handling behind it and StructureGen's catch-all
+        /// in front of it. A palette button has neither: it runs on the WPF dispatcher, where an
+        /// escaping exception is swallowed inside AutoCAD's palette host and the operation
+        /// underneath is rolled back by the transaction's own disposal. The result is a palette that
+        /// silently does nothing, which is indistinguishable from a palette that is not wired up.
+        /// This closes that gap for every button on every tab at once.
+        /// </remarks>
+        private static void InstallExceptionNet(StructureGenContext context, ICadService cad)
+        {
+            RelayCommand.UnhandledException = exception =>
+            {
+                context.Logger.Error("A palette command failed.", exception);
+
+                cad.ShowMessage(
+                    "StructureGen",
+                    "That did not complete, and the drawing has not been changed." +
+                    Environment.NewLine + Environment.NewLine +
+                    exception.Message +
+                    Environment.NewLine + Environment.NewLine +
+                    "Technical detail is in the log file: " +
+                    Core.Diagnostics.FileLogger.DefaultDirectory());
+            };
+        }
 
         /// <summary>Hides the palette without discarding its state.</summary>
         public static void Hide()

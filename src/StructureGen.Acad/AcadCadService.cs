@@ -255,12 +255,20 @@ namespace StructureGen.Acad
                     "AutoCAD could not complete the generation, so nothing was added to the drawing. " +
                     $"The reported problem was: {exception.Message}. Technical detail is in the StructureGen log file.");
             }
-            catch (InvalidOperationException exception)
+            catch (System.Exception exception)
             {
+                // The same catch-all the command methods have, for the same reason and then one
+                // more. Nothing may escape into AutoCAD; and this is reached from a palette button
+                // as well as from a command, where an escaping exception is swallowed by the WPF
+                // dispatcher without a word while the transaction's disposal quietly rolls the
+                // operation back - leaving a drawing that gained nothing and a palette that said
+                // nothing. Naming the operation here gives a better message than the palette's own
+                // net further out could.
                 _logger.Error("Generation failed.", exception);
                 return Result<GenerationSummary>.Failure(
                     "Cad.GenerationFailed",
-                    $"The generation could not be completed, so nothing was added to the drawing: {exception.Message}");
+                    "The generation could not be completed, so nothing was added to the drawing. " +
+                    $"The reported problem was: {exception.Message}. Technical detail is in the StructureGen log file.");
             }
         }
 
