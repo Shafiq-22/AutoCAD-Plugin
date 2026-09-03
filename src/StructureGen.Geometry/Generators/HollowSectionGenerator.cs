@@ -8,10 +8,15 @@ namespace StructureGen.Geometry.Generators
 {
     /// <summary>Generates rectangular and square hollow sections.</summary>
     /// <remarks>
-    /// A square hollow section need only supply its depth; the width then matches it. The inside
-    /// corner radius is derived as the outside radius less the wall thickness, which is how a cold
-    /// formed section is actually shaped, and is clamped to a sharp corner when that difference
-    /// would be negative.
+    /// A square hollow section need only supply its depth; the width then matches it.
+    ///
+    /// The inside corner radius is taken from the database where it gives one, and otherwise
+    /// derived as the outside radius less the wall thickness, which is the shape a tube of uniform
+    /// wall actually has; either way it is clamped to a sharp corner rather than allowed to go
+    /// negative. The distinction is not academic. EN 10210 defines the corner of a hot finished
+    /// section as 1.5t outside against 1.0t inside, so the wall is thinner around the corner than
+    /// along the flat, and assuming a uniform wall there under-states the area those tables publish
+    /// by up to three per cent on a thick walled section.
     /// </remarks>
     public sealed class HollowSectionGenerator : ElementGeneratorBase
     {
@@ -48,6 +53,7 @@ namespace StructureGen.Geometry.Generators
 
             parameters.Add(SchemaFactory.Locked(DimensionKeys.WallThickness, "Wall thickness t"));
             parameters.Add(SchemaFactory.Locked(DimensionKeys.OuterCornerRadius, "Outside corner radius", false));
+            parameters.Add(SchemaFactory.Locked(DimensionKeys.InnerCornerRadius, "Inside corner radius", false));
 
             SchemaFactory.AddInstanceParameters(parameters, Descriptor);
             return new ParameterSchema(CategoryId, parameters);
@@ -60,7 +66,8 @@ namespace StructureGen.Geometry.Generators
             double width = IsSquare ? height : Dimension(definition, DimensionKeys.Width, height);
             double wall = Dimension(definition, DimensionKeys.WallThickness);
             double outerRadius = RadiusForDetail(definition, DimensionKeys.OuterCornerRadius, DetailLevel.Standard);
-            double innerRadius = Math.Max(0d, outerRadius - wall);
+            double statedInner = RadiusForDetail(definition, DimensionKeys.InnerCornerRadius, DetailLevel.Standard);
+            double innerRadius = Math.Max(0d, statedInner > 0d ? statedInner : outerRadius - wall);
 
             List<ProfileLoop> loops = new()
             {

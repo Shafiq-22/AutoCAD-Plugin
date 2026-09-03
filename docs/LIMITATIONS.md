@@ -38,15 +38,37 @@ serving many instances — is achieved; the interactive grip editing is not.
 **The limitation.** UPN and similar channels are rolled with a tapered inner flange face.
 StructureGen draws them with parallel flanges.
 
-**Measured effect.** The drawn cross-sectional area is 2.0% to 2.9% larger than the published area.
-This is asserted by a test, which also asserts the direction: the approximation over-estimates and
-never under-estimates.
+**Which sections.** European UPN, and the AISC S, C, MC and ST families.
+
+**Measured effect.** The drawn cross-sectional area is within 3% of the published area, asserted by
+a test over every shipped channel. The direction depends on the record: a parallel flange at the
+mean thickness adds material at the toe, and a root radius the record does not give takes material
+away at the corner. Where the record names a radius the approximation over-estimates, and the test
+asserts that too; the AISC channels, whose tables publish no fillet radius, are drawn with sharp
+corners and can come out slightly light.
 
 **Effect on weights: none.** The schedule uses the tabulated mass per metre from the database, not
 the drawn area. Only the picture is approximate.
 
 **If you need it exact.** Give the record an explicit `outline`, which is extruded exactly as
 written. See `docs/DATABASE.md`.
+
+## 3a. AISC hollow sections are drawn with square corners
+
+**The limitation.** A rolled hollow section has rounded corners. AISC's tables publish no corner
+radius for HSS — the flat width they give is defined as the outside dimension less three times the
+design wall, which carries no radius information — so nothing in the source would let the corner be
+drawn, and StructureGen does not invent one.
+
+**Measured effect.** The drawn area over-states the real one by up to about 13% on the smallest,
+thickest-walled sections, and by very little on large thin ones. The European hollow sections are
+not affected: their source publishes a corner radius, and the inside radius is stated explicitly so
+that the drawn outline reproduces the tabulated area to within 0.5%.
+
+**Effect on weights: none**, for the same reason as above.
+
+**If you need it exact.** Add a `ro` and, where the standard defines one, an `ri` to the record, or
+give it an explicit `outline`.
 
 ## 4. Threads are represented by diameter, never modelled
 

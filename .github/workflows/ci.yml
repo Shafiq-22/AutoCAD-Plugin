@@ -74,6 +74,20 @@ jobs:
           dotnet run --project src/StructureGen.Tools.DataImport -c Release --no-build --
           validate --in data/structural-sections-imperial-demo.json
 
+      - name: Validate the compiled AISC dataset
+        run: >
+          dotnet run --project src/StructureGen.Tools.DataImport -c Release --no-build --
+          validate --in data/aisc-sections.json
+
+      # The section data is compiled from pinned upstream packages rather than hand written, so
+      # the committed files have to be what the compiler currently produces. Re-running it and
+      # finding a difference means someone edited the output instead of the compiler, or an
+      # upstream package moved - either way it needs looking at rather than merging.
+      - name: Recompile the section data and check it is unchanged
+        run: |
+          python3 tools/data-sources/compile_sections.py --download
+          git diff --exit-code -- data/
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4

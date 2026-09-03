@@ -39,6 +39,19 @@ namespace StructureGen.Core.Model
         /// <summary>Outside corner radius of a rectangular or square hollow section, <c>ro</c>.</summary>
         public const string OuterCornerRadius = "ro";
 
+        /// <summary>
+        /// The inside corner radius of a hollow section, in millimetres.
+        /// </summary>
+        /// <remarks>
+        /// Usually left out, in which case it is taken as the outside radius less the wall
+        /// thickness, which is the shape a tube of uniform wall actually has. It is worth stating
+        /// where a standard defines the corner differently: EN 10210 gives a hot finished section
+        /// an outside radius of 1.5t against an inside radius of 1.0t, and using the uniform wall
+        /// figure of 0.5t instead misses the area those tables publish by up to three per cent on
+        /// a thick walled section.
+        /// </remarks>
+        public const string InnerCornerRadius = "ri";
+
         /// <summary>Leg length A of an angle, <c>a</c>.</summary>
         public const string LegA = "a";
 

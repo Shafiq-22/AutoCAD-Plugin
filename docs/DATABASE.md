@@ -66,8 +66,22 @@ unrecognised token falls back to the default and reports a warning rather than f
 One special case: the dimension key `A` is an **area**, so it converts by the square of the length
 factor. An `A` of 53.8 in a file declaring `cm` becomes 5380 mm².
 
+`A` is not decoration. Where a record carries one, the test suite rebuilds the profile from the
+record's other dimensions and compares the area of the outline it gets with the `A` the table
+published — two figures that came from the table independently. Every shipped record passes that
+within 2%. It is the check that would catch a column read into the wrong field, which is the
+mistake that otherwise ships silently: the file still loads, the profile still looks plausible in
+the palette, and only the drawing is wrong.
+
+So do not put an `A` on a record whose outline cannot reproduce it. Where a standard tabulates an
+area against something other than the shape as drawn — AISC quotes hollow sections against a design
+wall about 93% of the nominal one — put it under `properties` instead, where it is carried verbatim
+and treated as informational.
+
 `data/structural-sections-imperial-demo.json` is a three-record file in inches and pounds per foot,
-included precisely to demonstrate this.
+included precisely to demonstrate this. `data/aisc-sections.json` is the same idea at full size:
+1,660 American shapes stored in the inches and pounds per foot their tables publish, so nothing was
+rounded on the way in and every number can be compared with the source directly.
 
 ## Standards and materials
 
@@ -148,6 +162,7 @@ All in the file's length unit.
 | `d` | Outside diameter | Pipe, round bar |
 | `t` | Wall thickness | Pipe, RHS, SHS |
 | `ro` | Outside corner radius | RHS, SHS |
+| `ri` | Inside corner radius; omit to take it as `ro` less the wall | RHS, SHS, optional |
 | `a` | Leg A, the vertical leg | Angle |
 | `b2` | Leg B; omit for an equal angle | Angle |
 | `tt` | Leg or plate thickness | Angle, plate, flat bar |
@@ -161,7 +176,7 @@ All in the file's length unit.
 | `d3` | Thread minor diameter | Bolt, nut, optional |
 | `ls` | Unthreaded shank length | Bolt, optional |
 | `d1`, `d2`, `hw` | Washer inside, outside, thickness | Washer |
-| `A` | Cross-sectional area, informational | Any |
+| `A` | Cross-sectional area; StructureGen checks its own outline against it | Any |
 
 Which of these a user may edit is decided by the generator, not by the database:
 
@@ -219,14 +234,59 @@ Every line carries a **weight basis** column saying which route was taken, and t
 written out in full — `42.2 kg/m x 6 m x 4 = 1012.8 kg` — so a checker can reproduce any figure by
 hand.
 
+## What ships, and where it came from
+
+| File | Records | Units | Contents |
+|---|---|---|---|
+| `data/structural-sections.json` | 581 | mm, kg/m | European sections: IPE, HEA, HEB, HEM, CHS, RHS, SHS, plus hand-written channels, angles, plates, bars and fasteners |
+| `data/aisc-sections.json` | 1,660 | in, lb/ft | American shapes: W, M, S, HP, C, MC, L, WT, MT, ST, HSS, Pipe |
+| `data/structural-sections-imperial-demo.json` | 3 | in, lb/ft | A miniature file kept only to demonstrate the unit declaration |
+
+The bulk of that is **compiled, not typed**. `tools/data-sources/compile_sections.py` reads two
+public, permissively licensed packages — pinned by version and SHA-256 in
+`tools/data-sources/sources.json` — and converts what they publish into this format:
+
+- **[eurocodepy](https://github.com/pcachim/eurocodepy)** (MIT) for the European sections, which
+  publishes them in centimetres and kilograms per metre.
+- **[steelpy](https://pypi.org/project/steelpy/)** (Apache-2.0) for the American shapes, which is a
+  transcription of the AISC Shapes Database v16.0 in inches and pounds per foot.
+
+Compiling rather than transcribing is the point. Running the script again on the same pinned inputs
+produces byte-identical files, so a reviewer can re-run it and diff instead of taking several
+thousand numbers on trust — and CI does exactly that on every push. Every record names the package,
+version and file it came from in its own `provenance`.
+
+Nothing was invented to fill a gap. Where a source does not publish a value it is left out and the
+profile is drawn without it. Two derivations were made, and both are stated in the provenance of
+every record they touch and justified by measurement:
+
+- **The fillet radius of AISC W, HP and WT shapes** is reconstructed as `k - tf`, which is AISC's
+  own definition of the design distance `k`. Applying it brings the computed area of all 289 W
+  shapes to within 0.73% of the independently tabulated area, against 2.72% with no fillet.
+  It is *not* applied to the tapered-flange families, where `k` also swallows the taper and the
+  reconstruction makes the shape worse — measured, and recorded in the script.
+- **The inside corner radius of the European hollow sections** is stated as `1.0t` rather than left
+  to be derived as `ro - t`. That is EN 10210's hot-finished corner profile, and it reproduces all
+  248 tabulated rectangular and square areas to within 0.42%, against 2.87% for a uniform wall.
+
+### Known approximations in the shipped data
+
+- **Hollow section corners.** AISC publishes no corner radius for HSS, so they are drawn with square
+  corners. On a small, thick-walled section that over-states the area by up to about 13%. The
+  schedule is unaffected — weight comes from the tabulated mass per foot, not from the outline.
+- **Tapered flanges.** UPN, and the AISC S, C, MC and ST families, are drawn with parallel flanges.
+- **Six shapes** — five in the M and MT families and HP8X36 — carry their tabulated area under
+  `properties` rather than `dimensions`, because the outline cannot reproduce it within 2%. Each
+  says so in its own provenance.
+
 ## Verification
 
 Every record has a `verified` flag, defaulting to `false`.
 
 Unverified records are flagged on the palette when selected, marked on the schedule, counted in the
-exported workbook, and reported by `SGRELOADDB`. **Every record in the shipped demonstration dataset
-is unverified**, because the figures were transcribed from widely published tables for demonstration
-and not checked against controlled copies.
+exported workbook, and reported by `SGRELOADDB`. **Every record in every shipped dataset is
+unverified**, and a test fails the build if one ever is not. An upstream package is not a controlled
+copy of a standard, and this project has no standing to say otherwise on your behalf.
 
 Set `"verified": true` only on records you personally have checked, and use `provenance` to record
 against what.

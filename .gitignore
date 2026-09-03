@@ -37,3 +37,8 @@ Thumbs.db
 
 ## Packaged bundle output
 *.bundle.zip
+
+# The upstream wheels the section data is compiled from. They are fetched on demand by
+# tools/data-sources/compile_sections.py --download and pinned by checksum in sources.json,
+# so there is nothing to gain from committing several hundred kilobytes of third-party archive.
+tools/data-sources/_cache/

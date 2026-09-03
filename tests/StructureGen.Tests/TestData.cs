@@ -43,20 +43,32 @@ namespace StructureGen.Tests
         public static ElementGeneratorRegistry Registry(Func<StructuralDatabase?>? database = null) =>
             ElementGeneratorRegistry.CreateDefault(id => database?.Invoke()?.FindSection(id));
 
+        /// <summary>The shipped American database, compiled from the AISC shapes database.</summary>
+        public static string AiscDatabasePath => Path.Combine(DataDirectory, "aisc-sections.json");
+
         /// <summary>Loads the shipped demonstration database, failing the test if it does not load.</summary>
         /// <returns>The database.</returns>
-        public static StructuralDatabase LoadDemoDatabase()
+        public static StructuralDatabase LoadDemoDatabase() => LoadShipped(DemoDatabasePath);
+
+        /// <summary>Loads the shipped American database, failing the test if it does not load.</summary>
+        /// <returns>The database.</returns>
+        public static StructuralDatabase LoadAiscDatabase() => LoadShipped(AiscDatabasePath);
+
+        /// <summary>Loads one of the shipped databases, failing the test if it does not load.</summary>
+        /// <param name="path">The file to load.</param>
+        /// <returns>The database.</returns>
+        public static StructuralDatabase LoadShipped(string path)
         {
             StructuralDatabase? loaded = null;
             ElementGeneratorRegistry registry = ElementGeneratorRegistry.CreateDefault(id => loaded?.FindSection(id));
             JsonDatabaseLoader loader = new(NullLogger.Instance, new DatabaseValidator(registry));
 
-            Core.Results.Result<StructuralDatabase> result = loader.Load(DemoDatabasePath);
+            Core.Results.Result<StructuralDatabase> result = loader.Load(path);
 
             if (result.IsFailure)
             {
                 throw new InvalidOperationException(
-                    $"The shipped demonstration database failed to load: {result.ErrorMessage}");
+                    $"The shipped database '{Path.GetFileName(path)}' failed to load: {result.ErrorMessage}");
             }
 
             loaded = result.Value;

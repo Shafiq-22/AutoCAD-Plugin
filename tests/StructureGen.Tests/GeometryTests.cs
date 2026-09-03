@@ -137,10 +137,25 @@ namespace StructureGen.Tests
             Assert.Equal(4d * 225d * (1d - (Math.PI / 4d)), filleted - sharp, 6);
         }
 
-        [Fact]
-        public void The_outer_contour_of_every_generated_profile_is_wound_anticlockwise()
+        /// <summary>The databases the plugin ships, so every one of them is held to the same bar.</summary>
+        /// <remarks>
+        /// The metric file is largely compiled from published tables and the American one entirely
+        /// so. A compilation that silently mangled a column would produce a file that still loads
+        /// and still lists plausible looking profiles, so the checks that matter are the ones that
+        /// rebuild each outline and compare it with a figure the same table published independently.
+        /// Running them over both files is what makes the compiler's output reviewable.
+        /// </remarks>
+        public static TheoryData<string> ShippedDatabases => new()
         {
-            StructuralDatabase database = TestData.LoadDemoDatabase();
+            TestData.DemoDatabasePath,
+            TestData.AiscDatabasePath,
+        };
+
+        [Theory]
+        [MemberData(nameof(ShippedDatabases))]
+        public void The_outer_contour_of_every_generated_profile_is_wound_anticlockwise(string path)
+        {
+            StructuralDatabase database = TestData.LoadShipped(path);
 
             foreach (SectionRecord record in database.Sections)
             {
@@ -155,10 +170,11 @@ namespace StructureGen.Tests
             }
         }
 
-        [Fact]
-        public void Every_record_in_the_shipped_database_generates()
+        [Theory]
+        [MemberData(nameof(ShippedDatabases))]
+        public void Every_record_in_the_shipped_database_generates(string path)
         {
-            StructuralDatabase database = TestData.LoadDemoDatabase();
+            StructuralDatabase database = TestData.LoadShipped(path);
             List<string> failures = new();
 
             foreach (SectionRecord record in database.Sections)
@@ -186,13 +202,22 @@ namespace StructureGen.Tests
             Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
         }
 
-        [Fact]
-        public void Generated_areas_agree_with_the_areas_the_tables_publish()
+        [Theory]
+        [MemberData(nameof(ShippedDatabases))]
+        public void Generated_areas_agree_with_the_areas_the_tables_publish(string path)
         {
             // Every record that carries a published area is checked against the area computed from
             // the outline. Tapered flange channels are excluded and asserted separately: StructureGen
             // draws them with parallel flanges, which is a documented approximation.
-            StructuralDatabase database = TestData.LoadDemoDatabase();
+            //
+            // A record whose published area cannot be reproduced does not reach here at all: the
+            // compiler moves that area into the record's properties, where it is informational,
+            // rather than offering it as a check it is known to fail. That happens for two reasons,
+            // both recorded in the record's own provenance - a hollow section whose area is
+            // tabulated against a design wall thinner than the one it is drawn with, and the
+            // handful of shapes whose tabulated area and tabulated mass do not agree with each
+            // other under any single density.
+            StructuralDatabase database = TestData.LoadShipped(path);
             List<string> failures = new();
 
             foreach (SectionRecord record in database.Sections)
@@ -219,10 +244,11 @@ namespace StructureGen.Tests
             Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
         }
 
-        [Fact]
-        public void Tapered_flange_channels_are_within_the_approximation_the_documentation_claims()
+        [Theory]
+        [MemberData(nameof(ShippedDatabases))]
+        public void Tapered_flange_channels_are_within_the_approximation_the_documentation_claims(string path)
         {
-            StructuralDatabase database = TestData.LoadDemoDatabase();
+            StructuralDatabase database = TestData.LoadShipped(path);
 
             foreach (SectionRecord record in database.Sections.Where(s => s.CategoryId == ElementCategory.Channel))
             {
@@ -235,7 +261,20 @@ namespace StructureGen.Tests
                 double error = Math.Abs(generated - (double)published) / (double)published * 100d;
 
                 Assert.True(error < 3d, $"{record.Designation} deviates by {error:0.00}%, more than the documented approximation.");
-                Assert.True(generated > (double)published, $"{record.Designation}: a parallel flange approximation should over-estimate, not under-estimate.");
+
+                // Two approximations pull in opposite directions, and which one wins depends on
+                // what the record supplies. Drawing a tapered flange as a parallel one at its mean
+                // thickness adds material at the toe; leaving out a root radius the record does not
+                // give takes material away at the corner. So a channel that names its radius should
+                // come out heavy, and only that case is asserted - claiming the same of a channel
+                // drawn with sharp corners would be asserting something untrue of the geometry.
+                if (record.Dimension(DimensionKeys.RootRadius) is > 0m)
+                {
+                    Assert.True(
+                        generated > (double)published,
+                        $"{record.Designation}: a parallel flange approximation over a filleted section " +
+                        "should over-estimate, not under-estimate.");
+                }
             }
         }
 

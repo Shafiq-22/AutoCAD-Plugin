@@ -30,8 +30,10 @@ dotnet test "$repository/tests/StructureGen.Tests" -c "$configuration" --no-buil
 
 echo
 echo "==> Validating the shipped data files"
-dotnet run --project "$repository/src/StructureGen.Tools.DataImport" -c "$configuration" --no-build -- \
-    validate --in "$repository/data/structural-sections.json"
+for database in structural-sections aisc-sections structural-sections-imperial-demo; do
+    dotnet run --project "$repository/src/StructureGen.Tools.DataImport" -c "$configuration" --no-build -- \
+        validate --in "$repository/data/$database.json"
+done
 
 echo
 echo "Done. To produce the installable AutoCAD bundle, run build/build.ps1 on Windows."

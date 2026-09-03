@@ -135,9 +135,28 @@ Everything about the format, the vocabulary and the import: [docs/DATABASE.md](d
 
 ### About the data that ships
 
-The included dataset — 120 records across 14 categories — exists so every feature works the moment
-you install the plugin. Its figures are widely published nominal values transcribed for that purpose,
-and **every record is marked unverified**. Verify them against your own authoritative source, or
+Two datasets, 2,241 records between them:
+
+- `structural-sections.json` — 581 European records in millimetres: IPE, HEA, HEB, HEM, CHS, RHS and
+  SHS, plus hand-written channels, angles, plates, bars and ISO fasteners.
+- `aisc-sections.json` — 1,660 American shapes in the inches and pounds per foot their tables
+  publish: W, M, S, HP, C, MC, L, WT, MT, ST, HSS and Pipe.
+
+Most of that is **compiled, not typed**. `tools/data-sources/compile_sections.py` reads two public,
+permissively licensed packages — [eurocodepy](https://github.com/pcachim/eurocodepy) (MIT) and
+[steelpy](https://pypi.org/project/steelpy/) (Apache-2.0, a transcription of the AISC Shapes
+Database v16.0) — pinned by version and checksum, and converts what they publish into StructureGen's
+format. Re-running it produces byte-identical files, and CI checks that the committed data is what
+the compiler currently produces, so the dataset can be reviewed by re-running rather than by reading
+two thousand numbers. Every record names the package, version and file it came from.
+
+The data is checked, not just converted. For every record carrying a published area, the test suite
+rebuilds the profile from the record's other dimensions and compares the outline's area with the
+area the table published independently — 2,241 records, all within 2%. That is the check that
+catches a column read into the wrong field, which is the failure that would otherwise ship quietly.
+
+**Every record is marked unverified**, and a test fails the build if one ever is not. An upstream
+package is not a controlled copy of a standard. Verify against your own authoritative source, or
 replace the file, before using any output for procurement, fabrication or construction.
 
 ---

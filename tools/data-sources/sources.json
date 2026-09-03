@@ -1,0 +1,54 @@
+{
+  "comment": [
+    "The upstream packages this dataset is compiled from, pinned by version and checksum.",
+    "Both are public, permissively licensed and installable from PyPI, which is what makes the",
+    "compilation reproducible: anyone can run compile_sections.py and get byte-identical output.",
+    "Neither is an Autodesk product and neither is redistributed here - only the numbers they",
+    "publish are, converted into StructureGen's format and attributed per record."
+  ],
+  "sources": [
+    {
+      "key": "eurocodepy",
+      "package": "eurocodepy",
+      "version": "2026.1.1",
+      "sha256": "7012db3b25753f986930a84745ff30aa34434b68100473908f4b0ac0182e338c",
+      "license": "MIT",
+      "author": "Paulo Cachim",
+      "homepage": "https://github.com/pcachim/eurocodepy",
+      "describes": "European hot rolled I and H sections (IPE, HEA, HEB, HEM) and cold formed hollow sections (CHS, RHS, SHS), in centimetres and kilograms per metre.",
+      "files": [
+        "eurocodepy/data/i_profiles_euro.json",
+        "eurocodepy/data/chs_profiles_euro.json",
+        "eurocodepy/data/rhs_profiles_euro.json",
+        "eurocodepy/data/shs_profiles_euro.json"
+      ],
+      "wheel": "eurocodepy-2026.1.1-py3-none-any.whl"
+    },
+    {
+      "key": "steelpy",
+      "package": "steelpy",
+      "version": "1.1.1",
+      "sha256": "5710a7ff7d7a7eb0ca52a00699851aaa962cd137d5f9492709e19e0aec85670a",
+      "license": "Apache-2.0",
+      "author": "Evan Faler",
+      "homepage": "https://pypi.org/project/steelpy/",
+      "describes": "A transcription of the AISC Shapes Database v16.0, in inches and pounds per foot.",
+      "files": [
+        "steelpy/shape files/W_shapes.csv",
+        "steelpy/shape files/M_shapes.csv",
+        "steelpy/shape files/S_shapes.csv",
+        "steelpy/shape files/HP_shapes.csv",
+        "steelpy/shape files/C_shapes.csv",
+        "steelpy/shape files/MC_shapes.csv",
+        "steelpy/shape files/L_shapes.csv",
+        "steelpy/shape files/WT_shapes.csv",
+        "steelpy/shape files/MT_shapes.csv",
+        "steelpy/shape files/ST_shapes.csv",
+        "steelpy/shape files/HSS_shapes.csv",
+        "steelpy/shape files/HSS_R_shapes.csv",
+        "steelpy/shape files/PIPE_shapes.csv"
+      ],
+      "wheel": "steelpy-1.1.1-py3-none-any.whl"
+    }
+  ]
+}
