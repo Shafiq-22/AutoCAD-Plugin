@@ -1,13 +1,13 @@
 {
   "schemaVersion": "1.0",
   "database": {
-    "id": "structuregen-demo",
-    "name": "StructureGen demonstration dataset",
-    "version": "0.1.0",
-    "revisionDate": "2026-09-02",
-    "description": "Demonstration data shipped with StructureGen so that every feature can be exercised out of the box. Replace it with your own authoritative section data.",
+    "id": "structuregen-europe",
+    "name": "European sections (compiled, unverified)",
+    "version": "1.0.0",
+    "revisionDate": "2026-09-03",
+    "description": "European hot rolled and hollow sections compiled from the eurocodepy package, alongside hand-written channels, angles, plates, bars and fasteners. Millimetres and kilograms per metre.",
     "verified": false,
-    "notes": "DEMONSTRATION DATA - NOT VERIFIED. Every record in this file carries \"verified\": false. The values are widely published nominal figures, transcribed for demonstration and NOT checked against controlled copies of the standards. StructureGen flags unverified records in the palette, on the bill of materials and in the exported workbook. Verify every dimension and unit weight against your own authoritative source before using output from this dataset for procurement, fabrication or construction."
+    "notes": "NOT VERIFIED. Every record carries \"verified\": false and names its source. The compiled records were produced mechanically by tools/data-sources/compile_sections.py from a third party package, not from a controlled copy of any standard. Verify against your own authoritative source before using any output for procurement or fabrication."
   },
   "units": {
     "length": "mm",

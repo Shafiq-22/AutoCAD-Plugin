@@ -283,14 +283,20 @@ namespace StructureGen.Tests
         }
 
         [Fact]
-        public void The_shipped_demonstration_database_loads_and_is_marked_unverified()
+        public void The_shipped_database_loads_and_is_marked_unverified()
         {
             StructuralDatabase database = TestData.LoadDemoDatabase();
 
             Assert.NotEmpty(database.Sections);
             Assert.False(database.Metadata.Verified);
             Assert.Equal(database.Sections.Count, database.UnverifiedRecordCount);
-            Assert.Contains("DEMONSTRATION", database.Metadata.Notes, StringComparison.OrdinalIgnoreCase);
+
+            // The file's own notes have to carry the warning, not just its records, because the
+            // notes are what a user reads when deciding whether to trust the weights on a drawing.
+            // This asserted the word "DEMONSTRATION" while the data was a small hand-written
+            // sample; it is now compiled from published tables and describes itself as such, so the
+            // claim worth holding on to is the warning rather than the word.
+            Assert.Contains("NOT VERIFIED", database.Metadata.Notes, StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]

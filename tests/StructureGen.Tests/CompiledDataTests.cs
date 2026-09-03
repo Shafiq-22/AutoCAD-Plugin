@@ -96,6 +96,26 @@ namespace StructureGen.Tests
         }
 
         [Fact]
+        public void Each_shipped_dataset_identifies_itself_distinctly()
+        {
+            // StructureGen stamps the database version onto every object it draws and prints it
+            // from SGABOUT, which is how "which data is this drawing built from?" and "which build
+            // is actually installed?" get answered. Two datasets sharing one name and version
+            // answers neither, and that cost a full round trip of a support conversation once.
+            (string Name, string Version) metric = Identity(TestData.LoadDemoDatabase());
+            (string Name, string Version) american = Identity(TestData.LoadAiscDatabase());
+
+            Assert.NotEqual(metric.Name, american.Name);
+            Assert.All(
+                new[] { metric, american },
+                identity =>
+                {
+                    Assert.False(string.IsNullOrWhiteSpace(identity.Name));
+                    Assert.False(string.IsNullOrWhiteSpace(identity.Version));
+                });
+        }
+
+        [Fact]
         public void The_american_dataset_is_written_in_the_units_its_tables_publish()
         {
             // Converting inches to millimetres before storing them would round every dimension in
@@ -111,6 +131,9 @@ namespace StructureGen.Tests
             // 408 lb/ft is 607.17 kg/m.
             Assert.Equal(607.17m, decimal.Round(record.UnitWeightKgPerM!.Value, 2));
         }
+
+        private static (string Name, string Version) Identity(StructuralDatabase database) =>
+            (database.Metadata.Name ?? string.Empty, database.Metadata.Version ?? string.Empty);
 
         private static void AssertFamilies(StructuralDatabase database, IReadOnlyDictionary<string, int> expected)
         {

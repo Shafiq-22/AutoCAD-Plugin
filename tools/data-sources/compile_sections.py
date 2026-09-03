@@ -917,6 +917,30 @@ def merge_into_metric(compiled: list[dict[str, Any]]) -> dict[str, Any]:
     path = DATA / "structural-sections.json"
     database = json.loads(path.read_text(encoding="utf-8"))
 
+    # The header identifies the data revision, and StructureGen stamps it onto every object it
+    # draws and prints it from SGABOUT. Leaving it at the version the hand-written file carried
+    # would make a compiled database indistinguishable from the demonstration set it replaced,
+    # which turns "which build is actually installed?" - the first question any support
+    # conversation asks - into something nobody can answer.
+    database["database"] = {
+        "id": "structuregen-europe",
+        "name": "European sections (compiled, unverified)",
+        "version": DATASET_VERSION,
+        "revisionDate": DATASET_DATE,
+        "description": (
+            "European hot rolled and hollow sections compiled from the eurocodepy package, "
+            "alongside hand-written channels, angles, plates, bars and fasteners. Millimetres "
+            "and kilograms per metre."
+        ),
+        "verified": False,
+        "notes": (
+            "NOT VERIFIED. Every record carries \"verified\": false and names its source. The "
+            "compiled records were produced mechanically by tools/data-sources/compile_sections.py "
+            "from a third party package, not from a controlled copy of any standard. Verify against "
+            "your own authoritative source before using any output for procurement or fabrication."
+        ),
+    }
+
     compiled_ids = {record["id"] for record in compiled}
     compiled_designations = {record["designation"].upper() for record in compiled}
 
@@ -945,6 +969,11 @@ def merge_into_metric(compiled: list[dict[str, Any]]) -> dict[str, Any]:
 
     database["standards"] = sorted(database.get("standards", []), key=lambda s: s["id"])
     return database
+
+
+# Bumped by hand when the compilation changes in a way that changes the numbers it produces.
+DATASET_VERSION = "1.0.0"
+DATASET_DATE = "2026-09-03"
 
 
 KNOWN_STANDARDS: dict[str, dict[str, str]] = {
@@ -995,8 +1024,8 @@ def american_database(sections: list[dict[str, Any]], manifest: dict[str, Any]) 
         "database": {
             "id": "structuregen-aisc",
             "name": "AISC shapes (compiled, unverified)",
-            "version": "1.0.0",
-            "revisionDate": "2026-09-03",
+            "version": DATASET_VERSION,
+            "revisionDate": DATASET_DATE,
             "description": (
                 "American structural shapes compiled from the AISC Shapes Database v16.0 as "
                 f"published in the steelpy package {source['version']}. Written in inches and "
