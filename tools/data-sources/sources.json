@@ -1,12 +1,49 @@
 {
   "comment": [
-    "The upstream packages this dataset is compiled from, pinned by version and checksum.",
-    "Both are public, permissively licensed and installable from PyPI, which is what makes the",
+    "The sources the shipped section data is compiled from, each pinned by checksum.",
+    "The two PyPI packages are public and installable, which is what makes their part of the",
     "compilation reproducible: anyone can run compile_sections.py and get byte-identical output.",
-    "Neither is an Autodesk product and neither is redistributed here - only the numbers they",
-    "publish are, converted into StructureGen's format and attributed per record."
+    "The workbook is a supplied file, vendored here for the same reason - so a reviewer can re-run",
+    "the compilation and diff rather than take several thousand numbers on trust.",
+    "None of these is an Autodesk product and none is redistributed wholesale; only the numbers",
+    "they publish are, converted into StructureGen's format and attributed per record."
   ],
   "sources": [
+    {
+      "key": "orange-book",
+      "kind": "workbook",
+      "file": "Steel_Section_Properties.xlsx",
+      "sha256": "739ddb784e8161858482ee610e7beb7072e7247bad43040352cbf8413e7f165d",
+      "retrieved": "2026-09-04",
+      "license": "See the copyright notices below. Supplied by the repository owner for use in this project.",
+      "copyright": [
+        "Orange Book sheets: (c) 2023 SCI and ArcelorMittal Commercial Sections S.A.",
+        "Blue Book sheets: (c) SCI (Steel for Life 'Blue Book').",
+        "AISC sheets: (c) AISC, Shapes Database v16.0; redistribution subject to AISC's terms."
+      ],
+      "describes": "Verbatim exports of primary published section tables: ArcelorMittal Orange Book (dimensions to EN 10365:2017, produced by SCI), the SCI Blue Book, and the AISC Shapes Database v16.0. Metric sheets are in millimetres, square centimetres and kilograms per metre.",
+      "sheets": {
+        "primary": [
+          "IPE (AM Orange Book)",
+          "HE (AM Orange Book)",
+          "HL HLZ (AM Orange Book)",
+          "HD (AM Orange Book)",
+          "HP (AM Orange Book)",
+          "UB (AM Orange Book)",
+          "UC (AM Orange Book)",
+          "UBP (AM Orange Book)"
+        ],
+        "crosscheck": [
+          "UB (SCI Blue Book)",
+          "UC (SCI Blue Book)",
+          "UBP (SCI Blue Book)",
+          "W (AISC v16)",
+          "M (AISC v16)",
+          "S (AISC v16)",
+          "HP (AISC v16)"
+        ]
+      }
+    },
     {
       "key": "eurocodepy",
       "package": "eurocodepy",

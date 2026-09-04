@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using StructureGen.Core.Model;
@@ -69,13 +70,26 @@ namespace StructureGen.Tests
             // at, so losing one is a failure rather than a smaller list.
             AssertFamilies(TestData.LoadDemoDatabase(), new Dictionary<string, int>
             {
-                ["IPE"] = 18,
-                ["HEA"] = 24,
-                ["HEB"] = 24,
-                ["HEM"] = 24,
+                // From the published tables in the supplied workbook.
+                ["IPE"] = 68,
+                ["HE"] = 124,
+                ["HD"] = 42,
+                ["HL"] = 35,
+                ["HLZ"] = 4,
+                ["HP"] = 31,
+                ["UB"] = 180,
+                ["UC"] = 46,
+                ["UBP"] = 17,
+
+                // Hollow sections, which the workbook does not cover.
                 ["CHS"] = 162,
                 ["RHS"] = 125,
                 ["SHS"] = 123,
+
+                // Hand written, and left alone by the compilation.
+                ["UPN"] = 10,
+                ["L"] = 10,
+                ["PL"] = 9,
             });
 
             AssertFamilies(TestData.LoadAiscDatabase(), new Dictionary<string, int>
@@ -113,6 +127,56 @@ namespace StructureGen.Tests
                     Assert.False(string.IsNullOrWhiteSpace(identity.Name));
                     Assert.False(string.IsNullOrWhiteSpace(identity.Version));
                 });
+        }
+
+        [Fact]
+        public void A_superseded_source_leaves_nothing_behind()
+        {
+            // Replacing a source is where a dataset quietly grows a second copy of itself. The
+            // European I and H sections came from a package until the published tables arrived,
+            // and the two name the same beam differently - an HEA 300 in one is an HE 300 A in the
+            // other - so a merge that matched on identity kept both. That shipped: 72 sections
+            // present twice, and nothing failed, because every record was individually valid.
+            //
+            // The compilation now drops everything it previously wrote and rebuilds it, which is
+            // what this holds it to. The old namings must be gone entirely, not merely outnumbered.
+            StructuralDatabase database = TestData.LoadDemoDatabase();
+
+            IReadOnlyList<string> stale = database.Sections
+                .Where(section => IsFamily(section.Designation, "HEA")
+                                  || IsFamily(section.Designation, "HEB")
+                                  || IsFamily(section.Designation, "HEM"))
+                .Select(section => section.Designation)
+                .ToList();
+
+            Assert.True(
+                stale.Count == 0,
+                $"{stale.Count} record(s) survive from the superseded source, starting with " +
+                $"'{stale.FirstOrDefault()}'. The published tables carry these as HE 300 A and so on.");
+        }
+
+        [Fact]
+        public void No_two_records_share_a_designation()
+        {
+            // Two records under one designation is unresolvable: an element stores the designation
+            // it was drawn from, so a drawing could no longer say which of them it meant.
+            //
+            // Two designations for one section, on the other hand, is not a fault and is not
+            // asserted against. The published tables genuinely carry some sections twice under
+            // different names - an HD 260 x 172 and an HE 260 M are the same rolled section, with
+            // identical dimensions and mass - and a fabricator orders by whichever name their
+            // market uses, so both are shipped.
+            List<string> repeated = new();
+
+            foreach (StructuralDatabase database in new[] { TestData.LoadDemoDatabase(), TestData.LoadAiscDatabase() })
+            {
+                repeated.AddRange(database.Sections
+                    .GroupBy(section => section.Designation, StringComparer.OrdinalIgnoreCase)
+                    .Where(group => group.Count() > 1)
+                    .Select(group => $"{group.Key} appears {group.Count()} times"));
+            }
+
+            Assert.True(repeated.Count == 0, string.Join(Environment.NewLine, repeated.Take(10)));
         }
 
         [Fact]

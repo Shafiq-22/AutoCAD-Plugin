@@ -79,7 +79,7 @@ jobs:
           dotnet run --project src/StructureGen.Tools.DataImport -c Release --no-build --
           validate --in data/aisc-sections.json
 
-      # The section data is compiled from pinned upstream packages rather than hand written, so
+      # The section data is compiled from pinned sources rather than hand written, so
       # the committed files have to be what the compiler currently produces. Re-running it and
       # finding a difference means someone edited the output instead of the compiler, or an
       # upstream package moved - either way it needs looking at rather than merging.

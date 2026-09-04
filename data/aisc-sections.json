@@ -3,8 +3,8 @@
   "database": {
     "id": "structuregen-aisc",
     "name": "AISC shapes (compiled, unverified)",
-    "version": "1.0.0",
-    "revisionDate": "2026-09-03",
+    "version": "1.1.0",
+    "revisionDate": "2026-09-04",
     "description": "American structural shapes compiled from the AISC Shapes Database v16.0 as published in the steelpy package 1.1.1. Written in inches and pounds per foot; StructureGen converts on load.",
     "verified": false,
     "notes": "NOT VERIFIED. Every record carries \"verified\": false and names its source. The numbers were compiled mechanically by tools/data-sources/compile_sections.py from a third party transcription of AISC's database, not from AISC's own file, and no fillet radius is published by AISC - the value here is reconstructed from the tabulated design distance k. Verify against your own authoritative source before using any output from this dataset for procurement or fabrication."

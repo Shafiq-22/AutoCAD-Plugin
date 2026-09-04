@@ -135,29 +135,40 @@ Everything about the format, the vocabulary and the import: [docs/DATABASE.md](d
 
 ### About the data that ships
 
-Two datasets, 2,241 records between them:
+Two datasets, **2,698 records** between them:
 
-- `structural-sections.json` — 581 European records in millimetres: IPE, HEA, HEB, HEM, CHS, RHS and
-  SHS, plus hand-written channels, angles, plates, bars and ISO fasteners.
+- `structural-sections.json` — 1,038 European and UK records in millimetres: IPE, HE, HD, HL, HLZ,
+  HP, UB, UC, UBP, CHS, RHS and SHS, plus hand-written channels, angles, plates, bars and fasteners.
 - `aisc-sections.json` — 1,660 American shapes in the inches and pounds per foot their tables
   publish: W, M, S, HP, C, MC, L, WT, MT, ST, HSS and Pipe.
 
-Most of that is **compiled, not typed**. `tools/data-sources/compile_sections.py` reads two public,
-permissively licensed packages — [eurocodepy](https://github.com/pcachim/eurocodepy) (MIT) and
-[steelpy](https://pypi.org/project/steelpy/) (Apache-2.0, a transcription of the AISC Shapes
-Database v16.0) — pinned by version and checksum, and converts what they publish into StructureGen's
-format. Re-running it produces byte-identical files, and CI checks that the committed data is what
-the compiler currently produces, so the dataset can be reviewed by re-running rather than by reading
-two thousand numbers. Every record names the package, version and file it came from.
+Almost all of it is **compiled, not typed**. `tools/data-sources/compile_sections.py` reads three
+sources pinned by SHA-256 — verbatim exports of the [ArcelorMittal Orange
+Book](https://orangebook.arcelormittal.com) and the SCI [Blue
+Book](https://www.steelforlifebluebook.co.uk) for the European and UK sections,
+[eurocodepy](https://github.com/pcachim/eurocodepy) for hollow sections, and
+[steelpy](https://pypi.org/project/steelpy/) for the AISC shapes — and converts what they publish
+into StructureGen's format. Re-running it produces byte-identical files, and CI checks that the
+committed data is what the compiler currently produces, so the dataset is reviewed by re-running
+rather than by reading several thousand numbers.
 
-The data is checked, not just converted. For every record carrying a published area, the test suite
-rebuilds the profile from the record's other dimensions and compares the outline's area with the
-area the table published independently — 2,241 records, all within 2%. That is the check that
-catches a column read into the wrong field, which is the failure that would otherwise ship quietly.
+**The data is checked, not just converted.** For every record carrying a published area, the test
+suite rebuilds the profile from that record's own dimensions and compares the outline's area against
+the area the table published independently — 2,698 records, all within 2%. That is the check that
+catches a column read into the wrong field. On top of it, 158 UK sections are compared against a
+second, independently produced publication, which agrees on every dimension and every mass.
 
-**Every record is marked unverified**, and a test fails the build if one ever is not. An upstream
-package is not a controlled copy of a standard. Verify against your own authoritative source, or
+Where the sources disagreed, the tie was broken by evidence rather than preference, and every such
+decision is recorded in the affected records' own `provenance`. See
+[docs/DATABASE.md](docs/DATABASE.md) for each one.
+
+**Every record is marked unverified**, and a test fails the build if one ever is not. A published
+export is not a controlled copy of a standard. Verify against your own authoritative source, or
 replace the file, before using any output for procurement, fabrication or construction.
+
+The Orange Book sheets are © 2023 SCI and ArcelorMittal Commercial Sections S.A., the Blue Book
+sheets © SCI, and the AISC data © AISC with redistribution subject to AISC's terms. The MIT licence
+covers this repository's code, not those tables.
 
 ---
 

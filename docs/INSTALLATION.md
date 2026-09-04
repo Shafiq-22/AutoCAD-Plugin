@@ -84,20 +84,20 @@ Delete those too if you want no trace left.
 
 1. Type `STRUCTUREGEN`. The palette opens and docks like any other AutoCAD palette.
 2. The status line at the bottom names the loaded database. Out of the box that is the
-   European dataset, and it will tell you that all 581 of its records are unverified. **That is
+   European dataset, and it will tell you that all 1,038 of its records are unverified. **That is
    correct and deliberate** — see the note below.
 3. Go to the **Settings** tab, point *Structural database* at your own data file, and press
    **Reload database**. The validation report appears immediately beneath.
 
 ### About the shipped data
 
-Two datasets ship: `structural-sections.json`, 581 European records in millimetres, loaded by
-default; and `aisc-sections.json`, 1,660 American shapes in inches and pounds per foot. To use the
+Two datasets ship: `structural-sections.json`, 1,038 European and UK records in millimetres,
+loaded by default; and `aisc-sections.json`, 1,660 American shapes in inches and pounds per foot. To use the
 American one, point *Structural database* at it on the Settings tab and press **Reload database** —
 the file declares its own units and StructureGen converts on load.
 
-Most of both is compiled from published upstream tables rather than typed, and each record names the
-package, version and file it came from. **Every record is marked unverified.** StructureGen flags
+Almost all of both is compiled from published tables rather than typed, and each record names the
+source, sheet or file it came from. **Every record is marked unverified.** StructureGen flags
 them in the palette, on the schedule and in the exported workbook until you either verify them or
 load your own data. See `docs/DATABASE.md` for what came from where, and for the approximations the
 shipped data is known to contain.

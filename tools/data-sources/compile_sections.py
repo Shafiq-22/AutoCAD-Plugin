@@ -52,6 +52,12 @@ from pathlib import Path
 from typing import Any
 
 HERE = Path(__file__).resolve().parent
+
+# The reader lives beside this script rather than on the path, so that the compilation runs the
+# same way from anywhere - including from CI, which invokes it by full path from the repo root.
+sys.path.insert(0, str(HERE))
+
+import minixlsx  # noqa: E402  (imported after the path is set, which is the point)
 REPO = HERE.parent.parent
 DATA = REPO / "data"
 CACHE = HERE / "_cache"
@@ -126,7 +132,7 @@ def number(value: Any) -> float | None:
     if value is None:
         return None
 
-    text = str(value).strip().replace("–", "-")
+    text = str(value).strip().replace("–", "-").replace(",", "")
     if text in ("", "-", "–", "None", "nan"):
         return None
 
@@ -245,10 +251,14 @@ def european_record(
     if member.endswith(("chs_profiles_euro.json", "rhs_profiles_euro.json", "shs_profiles_euro.json")):
         provenance += HOT_FINISHED_NOTE
 
-    if family in ("IPE", "IPN"):
-        category, standard = "i-section", "en-10365"
-    elif family in ("HEA", "HEB", "HEM", "HEAA"):
-        category, standard = "h-section", "en-10365"
+    if family in ("IPE", "IPN", "HEA", "HEB", "HEM", "HEAA"):
+        # Superseded. These came from eurocodepy while there was nothing better; the supplied
+        # workbook carries the same sections straight from the ArcelorMittal Orange Book, which
+        # is the published table itself rather than a package's copy of one, and it covers the
+        # HD, HL, HLZ, HP, UB, UC and UBP families as well. Reading them from both sources would
+        # mean shipping two records for one section that disagree in the last digit.
+        report.superseded(name)
+        return None
     elif family == "CHS":
         category, standard = "pipe", "en-10210"
     elif family == "RHS":
@@ -334,6 +344,296 @@ def tabulated(row: dict[str, Any], keys: tuple[str, ...]) -> dict[str, float]:
             result[key] = value
 
     return result
+
+
+# --------------------------------------------------------------------------------------
+# European sections, from the supplied workbook of published tables
+# --------------------------------------------------------------------------------------
+
+BOOK_PROVENANCE = (
+    "Compiled by tools/data-sources/compile_sections.py from the '{sheet}' sheet of "
+    "Steel_Section_Properties.xlsx, a verbatim export of {source}. Dimensions are as published, "
+    "in millimetres; the area is converted from square centimetres. NOT verified against a "
+    'controlled copy of the standard. Set "verified": true only after checking against your own '
+    "authoritative source."
+)
+
+RADIUS_NOTE = (
+    " The root radius is taken from {source} rather than from the sheet above, which prints a "
+    "rounded figure for this section. The two publications agree on every other dimension and on "
+    "the mass; the radius used here is the one that accounts for the cross-sectional area printed "
+    "in the same row, which the rounded figure does not."
+)
+
+ORANGE_BOOK = (
+    "the ArcelorMittal Orange Book (orangebook.arcelormittal.com), produced by SCI for "
+    "ArcelorMittal Commercial Sections S.A. with dimensions to EN 10365:2017, "
+    "(c) 2023 SCI and ArcelorMittal Commercial Sections S.A."
+)
+
+BLUE_BOOK = (
+    "the Steel for Life 'Blue Book' (steelforlifebluebook.co.uk), produced by SCI to "
+    "BS EN 10365:2017, (c) SCI"
+)
+
+# Each sheet of published sections, and what StructureGen should make of it.
+#
+# "category" is which generator draws the profile. The distinction between an I and an H here
+# follows the shape rather than the letter of the name: a UB is deeper than it is wide and is
+# drawn as an I, while a UC, an HD or a bearing pile is roughly square and is drawn as an H.
+# Both generators produce a doubly symmetric flanged profile, so the choice affects how the
+# palette groups and labels the section rather than the geometry it draws.
+BOOK_SHEETS: dict[str, dict[str, Any]] = {
+    "IPE (AM Orange Book)": {"category": "i-section", "standard": "en-10365", "source": ORANGE_BOOK},
+    "HE (AM Orange Book)": {"category": "h-section", "standard": "en-10365", "source": ORANGE_BOOK},
+    "HL HLZ (AM Orange Book)": {"category": "h-section", "standard": "en-10365", "source": ORANGE_BOOK},
+    "HD (AM Orange Book)": {"category": "h-section", "standard": "en-10365", "source": ORANGE_BOOK},
+    "HP (AM Orange Book)": {"category": "h-section", "standard": "en-10365", "source": ORANGE_BOOK},
+    "UB (AM Orange Book)": {"category": "i-section", "standard": "bs-en-10365", "source": ORANGE_BOOK},
+    "UC (AM Orange Book)": {"category": "h-section", "standard": "bs-en-10365", "source": ORANGE_BOOK},
+    "UBP (AM Orange Book)": {"category": "h-section", "standard": "bs-en-10365", "source": ORANGE_BOOK},
+}
+
+# The same sections again, exported independently from a different publication. They are not
+# compiled into the database; they are read only to check the first transcription against a
+# second one, which is the nearest thing to verification this project can honestly perform.
+BOOK_CROSSCHECKS: dict[str, str] = {
+    "UB (SCI Blue Book)": "UB (AM Orange Book)",
+    "UC (SCI Blue Book)": "UC (AM Orange Book)",
+    "UBP (SCI Blue Book)": "UBP (AM Orange Book)",
+}
+
+# The symbols these tables use, and the dimension key each becomes.
+BOOK_DIMENSIONS = {"h": "h", "b": "b", "tw": "tw", "tf": "tf", "r": "r"}
+
+
+def read_book_sheet(rows: list[list[Any]]) -> list[dict[str, Any]]:
+    """Reads one published section table into rows of {designation, mass, dimensions}.
+
+    These sheets are reproductions of printed tables, so the header is several rows deep and the
+    layout is not the same in every publication: the Orange Book puts the designation in one
+    column, and the Blue Book splits it across two and states the serial size only on the first
+    row of each group. Rather than encode either layout, the symbol row is found by looking for
+    the symbols themselves, and everything else is located relative to it.
+    """
+    symbols = None
+
+    for index, row in enumerate(rows):
+        text = [str(cell).strip() if cell is not None else "" for cell in row]
+
+        if "h" in text and "tw" in text and "tf" in text and "A" in text:
+            symbols = {name: column for column, name in enumerate(text) if name}
+            units = [str(cell).strip() if cell is not None else "" for cell in rows[index + 1]]
+            first = index + 2
+            break
+
+    if symbols is None:
+        raise SystemExit("a sheet of published sections has no recognisable header row")
+
+    # The mass column carries no symbol of its own, only its unit, which is how the printed
+    # tables label it.
+    mass_column = next((column for column, unit in enumerate(units) if unit == "kg/m"), None)
+
+    if mass_column is None:
+        raise SystemExit("a sheet of published sections does not say which column holds the mass")
+
+    # Everything left of the first numeric column is part of the designation. The Blue Book
+    # spreads it over two of them and leaves the serial size blank on continuation rows, so it
+    # is carried down.
+    label_columns = list(range(0, min(mass_column, min(symbols.values()))))
+    carried = [""] * len(label_columns)
+    records: list[dict[str, Any]] = []
+
+    for row in rows[first:]:
+        mass = number(row[mass_column]) if mass_column < len(row) else None
+
+        if mass is None or mass <= 0:
+            # A blank row, or the copyright footer the source prints under its table.
+            continue
+
+        for position, column in enumerate(label_columns):
+            cell = row[column] if column < len(row) else None
+            if cell is not None and str(cell).strip():
+                carried[position] = str(cell).strip()
+                # A new group heading invalidates the narrower labels under the old one.
+                for later in range(position + 1, len(carried)):
+                    carried[later] = ""
+
+        designation = " ".join(part for part in carried if part).strip()
+
+        if not designation:
+            continue
+
+        dimensions: dict[str, float] = {}
+        for symbol, key in BOOK_DIMENSIONS.items():
+            column = symbols.get(symbol)
+            value = number(row[column]) if column is not None and column < len(row) else None
+            if value is not None and value > 0:
+                dimensions[key] = value
+
+        area = number(row[symbols["A"]]) if symbols["A"] < len(row) else None
+
+        records.append({"designation": designation, "mass": mass, "dimensions": dimensions, "area": area})
+
+    return records
+
+
+def compile_book(manifest: dict[str, Any], report: "Report") -> list[dict[str, Any]]:
+    """Compiles the European sections from the supplied workbook of published tables."""
+    source = next(s for s in manifest["sources"] if s["key"] == "orange-book")
+    path = HERE / source["file"]
+
+    if not path.exists():
+        raise SystemExit(f"{path} is missing; it is committed alongside this script.")
+
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    if digest != source["sha256"]:
+        raise SystemExit(
+            f"{source['file']} has checksum {digest}, but sources.json pins {source['sha256']}. "
+            "The workbook has changed, which needs reviewing before its numbers are shipped."
+        )
+
+    sections: list[dict[str, Any]] = []
+    parsed: dict[str, list[dict[str, Any]]] = {}
+    second: dict[str, list[dict[str, Any]]] = {}
+
+    with minixlsx.Workbook(str(path)) as workbook:
+        for sheet in BOOK_SHEETS:
+            parsed[sheet] = read_book_sheet(workbook.rows(sheet))
+
+        for sheet, against in BOOK_CROSSCHECKS.items():
+            second[against] = read_book_sheet(workbook.rows(sheet))
+            report.crosscheck(sheet, against, second[against], parsed[against])
+
+    for sheet, mapping in BOOK_SHEETS.items():
+        radii = better_radii(parsed[sheet], second.get(sheet), report, sheet)
+
+        for row in parsed[sheet]:
+            record = book_record(row, sheet, mapping, radii, report)
+            if record is not None:
+                sections.append(record)
+
+    return sections
+
+
+def better_radii(
+    primary: list[dict[str, Any]],
+    secondary: list[dict[str, Any]] | None,
+    report: "Report",
+    sheet: str,
+) -> dict[str, float]:
+    """Chooses, per section, which publication's root radius to draw with.
+
+    The two publications agree on every dimension of a UK section except the root radius, where
+    the Orange Book prints a round number - 20.0 for a whole range of different sections - and
+    the Blue Book prints something like 19.1 or 17.8. One of them has been standardised, and the
+    difference is large enough to matter to a drawn fillet.
+
+    It is not settled by preferring a publication. It is settled by asking which radius accounts
+    for the cross-sectional area the Orange Book prints in the same row, since that area was
+    computed from the real profile. The Blue Book's radius wins decisively - across the 131
+    sections where they disagree it reproduces the Orange Book's own area to 0.11 per cent on
+    average against 0.25, and 0.52 per cent at worst against 1.53 - so where a section appears in
+    both, the radius consistent with the published area is the one drawn, and the record says so.
+    """
+    if not secondary:
+        return {}
+
+    theirs = {
+        _crosscheck_key(normalise_designation(row["designation"], sheet)): row
+        for row in secondary
+    }
+
+    chosen: dict[str, float] = {}
+
+    for row in primary:
+        key = _crosscheck_key(normalise_designation(row["designation"], sheet))
+        other = theirs.get(key)
+
+        if other is None:
+            continue
+
+        mine = row["dimensions"].get("r")
+        theirs_radius = other["dimensions"].get("r")
+
+        if mine is None or theirs_radius is None or abs(mine - theirs_radius) < 0.05:
+            continue
+
+        chosen[key] = theirs_radius
+        report.radius_corrected(normalise_designation(row["designation"], sheet), mine, theirs_radius)
+
+    return chosen
+
+
+def book_record(
+    row: dict[str, Any],
+    sheet: str,
+    mapping: dict[str, Any],
+    radii: dict[str, float],
+    report: "Report",
+) -> dict[str, Any] | None:
+    designation = normalise_designation(row["designation"], sheet)
+    dimensions = dict(row["dimensions"])
+    corrected = radii.get(_crosscheck_key(designation))
+
+    if corrected is not None:
+        dimensions["r"] = corrected
+
+    missing = [key for key in ("h", "b", "tw", "tf") if key not in dimensions]
+    if missing:
+        report.skipped(designation, f"the table gives no {', '.join(missing)}")
+        return None
+
+    if row["area"]:
+        dimensions["A"] = rounded(row["area"] * CM2_TO_MM2, 2)
+
+    outline = 2 * dimensions["b"] * dimensions["tf"] + (dimensions["h"] - 2 * dimensions["tf"]) * dimensions["tw"]
+    outline += 4 * (1 - math.pi / 4) * dimensions.get("r", 0.0) ** 2
+
+    if "A" in dimensions:
+        deviation = abs(outline - dimensions["A"]) / dimensions["A"] * 100.0
+
+        if deviation > 8.0:
+            report.mangled(designation, deviation)
+
+        if deviation > 2.0:
+            report.demoted(designation, deviation)
+            del dimensions["A"]
+
+    report.check_mass(designation, row["mass"], outline, "metric", sheet)
+
+    return {
+        "id": f"{mapping['standard'].replace('-', '')}-{slug(designation)}",
+        "standardId": mapping["standard"],
+        "category": mapping["category"],
+        "designation": designation,
+        "nominalSize": designation.split()[1] if len(designation.split()) > 1 else designation,
+        "material": "s355jr",
+        "unitWeight": rounded(row["mass"], 4),
+        "dimensions": dimensions,
+        "verified": False,
+        "provenance": BOOK_PROVENANCE.format(sheet=sheet, source=mapping["source"])
+        + (RADIUS_NOTE.format(source=BLUE_BOOK) if corrected is not None else ""),
+    }
+
+
+def normalise_designation(designation: str, sheet: str) -> str:
+    """Puts a designation into the form the source prints, with the family prefix present.
+
+    The Blue Book omits the family letters, because the page it is printed on already says
+    which table you are reading; a palette listing every section together does not have that
+    context, so a UB is named as one.
+    """
+    # The Orange Book prints a trailing "+" against sections whose capacities were calculated
+    # with HISTAR yield strengths. It is a footnote marker on the page, not part of the name.
+    text = re.sub(r"\s*\+\s*$", "", str(designation))
+    text = re.sub(r"\s+", " ", text).strip()
+    family = sheet.split(" ")[0]
+
+    if not text.upper().startswith(family.upper()):
+        text = f"{family} {text}"
+
+    return text
 
 
 # --------------------------------------------------------------------------------------
@@ -777,6 +1077,11 @@ def read_fraction(token: str) -> tuple[str, float] | None:
 # --------------------------------------------------------------------------------------
 
 
+def _crosscheck_key(designation: str) -> str:
+    """Reduces a designation to what two publications of it have in common."""
+    return re.sub(r"[^0-9a-z]", "", designation.lower())
+
+
 class Report:
     """Collects everything the compilation noticed, so nothing passes silently."""
 
@@ -788,6 +1093,9 @@ class Report:
         self.worst: dict[str, float] = {}
         self.inconsistent_areas: list[tuple[str, float]] = []
         self.mangled_areas: list[tuple[str, float]] = []
+        self.crosschecks: list[tuple[str, str, int, int, list[str]]] = []
+        self.supersessions: list[str] = []
+        self.radii: list[tuple[str, float, float]] = []
 
     def skipped(self, name: str, reason: str) -> None:
         self.skips.append((name, reason))
@@ -797,6 +1105,71 @@ class Report:
 
     def mangled(self, name: str, error: float) -> None:
         self.mangled_areas.append((name, error))
+
+    def radius_corrected(self, name: str, printed: float, used: float) -> None:
+        self.radii.append((name, printed, used))
+
+    def superseded(self, name: str) -> None:
+        self.supersessions.append(name)
+
+    def crosscheck(
+        self, sheet: str, against: str,
+        candidate: list[dict[str, Any]], reference: list[dict[str, Any]],
+    ) -> None:
+        """Compares two independent publications of the same sections.
+
+        This is the nearest thing to verification this project can honestly do. It cannot say a
+        number matches the standard - it has no controlled copy of one - but it can say that two
+        separately produced tables of the same sections agree, which a transcription error in
+        either would break. Sections present in only one of the two are not a disagreement: the
+        publications do not carry identical ranges, and saying so would bury the real finding.
+        """
+        # The two publications do not spell a section the same way: the Blue Book prints the
+        # serial size alone, because the page it is on already says these are universal beams,
+        # while the Orange Book prints the family too. Both are put into the form the database
+        # uses before being matched, or nothing matches anything.
+        theirs = {
+            _crosscheck_key(normalise_designation(row["designation"], against)): row
+            for row in reference
+        }
+        compared = 0
+        resolved = 0
+        differences: list[str] = []
+
+        for row in candidate:
+            other = theirs.get(_crosscheck_key(normalise_designation(row["designation"], sheet)))
+
+            if other is None:
+                continue
+
+            compared += 1
+
+            for key, value in row["dimensions"].items():
+                mine = other["dimensions"].get(key)
+
+                if mine is None or value is None:
+                    continue
+
+                # The publications round to different numbers of significant figures, so they
+                # are compared at the precision the coarser of the two actually prints.
+                if abs(mine - value) <= max(0.55, abs(value) * 0.006):
+                    continue
+
+                if key == "r":
+                    # Known, understood and already resolved: the two publications round the
+                    # root radius differently, and better_radii picks the one that accounts for
+                    # the published area. Counting it here would bury a real disagreement in a
+                    # hundred expected ones.
+                    resolved += 1
+                    continue
+
+                differences.append(f"{row['designation']} {key}: {value} against {mine}")
+
+            if abs(row["mass"] - other["mass"]) > max(0.55, abs(other["mass"]) * 0.006):
+                differences.append(
+                    f"{row['designation']} mass: {row['mass']} against {other['mass']}")
+
+        self.crosschecks.append((sheet, against, compared, resolved, differences))
 
     def check_designation(
         self, name: str, family: str, tokens: list[str], dimensions: dict[str, float],
@@ -858,6 +1231,21 @@ class Report:
     def finish(self) -> int:
         print()
 
+        if self.radii:
+            print(
+                f"{len(self.radii)} section(s) drawn with the root radius from the second "
+                "publication, which accounts for the published area where the first sheet's "
+                "rounded figure does not. For example:"
+            )
+            for name, printed, used in self.radii[:5]:
+                print(f"    {name}: {printed} printed, {used} used")
+
+        if self.supersessions:
+            print(
+                f"{len(self.supersessions)} eurocodepy record(s) skipped: the workbook is a "
+                "primary source for those sections and supersedes them."
+            )
+
         if self.skips:
             print(f"{len(self.skips)} row(s) skipped:")
             for name, reason in self.skips[:20]:
@@ -875,6 +1263,23 @@ class Report:
             )
             for name, error in sorted(self.inconsistent_areas, key=lambda x: -x[1])[:10]:
                 print(f"    {name}: {error:.1f}%")
+
+        for sheet, against, compared, resolved, differences in self.crosschecks:
+            note = f" ({resolved} root radius difference(s) resolved)" if resolved else ""
+
+            if not compared:
+                print(f"CROSS-CHECK {sheet} against {against}: no section appears in both.")
+            elif differences:
+                print(f"CROSS-CHECK {sheet} against {against}: {compared} compared{note}, "
+                      f"{len(differences)} unexplained:")
+                for line in differences[:15]:
+                    print(f"    {line}")
+            else:
+                print(f"CROSS-CHECK {sheet} against {against}: {compared} sections compared"
+                      f"{note}, every other dimension and every mass agrees.")
+
+        if self.crosschecks:
+            print()
 
         print("Published mass against the area of the outline as drawn, worst case per family:")
         for group in sorted(self.worst):
@@ -928,9 +1333,10 @@ def merge_into_metric(compiled: list[dict[str, Any]]) -> dict[str, Any]:
         "version": DATASET_VERSION,
         "revisionDate": DATASET_DATE,
         "description": (
-            "European hot rolled and hollow sections compiled from the eurocodepy package, "
-            "alongside hand-written channels, angles, plates, bars and fasteners. Millimetres "
-            "and kilograms per metre."
+            "European and UK hot rolled sections compiled from the published tables of the "
+            "ArcelorMittal Orange Book and the SCI Blue Book, hollow sections from the eurocodepy "
+            "package, alongside hand-written channels, angles, plates, bars and fasteners. "
+            "Millimetres and kilograms per metre."
         ),
         "verified": False,
         "notes": (
@@ -941,13 +1347,18 @@ def merge_into_metric(compiled: list[dict[str, Any]]) -> dict[str, Any]:
         ),
     }
 
-    compiled_ids = {record["id"] for record in compiled}
-    compiled_designations = {record["designation"].upper() for record in compiled}
-
+    # Anything this script wrote before is regenerated from scratch, so it is dropped rather than
+    # matched against what is being written now. Matching by identity was wrong: when a source is
+    # superseded the new records carry different ids and different designations - the same beam is
+    # an HEA 300 in one publication and an HE 300 A in another - so the old ones survived the
+    # merge and the file shipped both, as two records for one physical section.
+    #
+    # A record's own provenance says who wrote it, which is the one thing that does not change
+    # when a source is replaced. Everything else - the hand-written channels, angles, plates,
+    # bars and fasteners - is left exactly as it is.
     kept = [
         section for section in database["sections"]
-        if section["id"] not in compiled_ids
-        and section["designation"].upper() not in compiled_designations
+        if COMPILED_BY not in (section.get("provenance") or "")
     ]
 
     database["sections"] = sorted(kept + compiled, key=sort_key)
@@ -971,12 +1382,25 @@ def merge_into_metric(compiled: list[dict[str, Any]]) -> dict[str, Any]:
     return database
 
 
+# The phrase every record this script writes carries in its provenance, and the only reliable
+# way for it to recognise its own past output when merging.
+COMPILED_BY = "Compiled by tools/data-sources/compile_sections.py"
+
+
 # Bumped by hand when the compilation changes in a way that changes the numbers it produces.
-DATASET_VERSION = "1.0.0"
-DATASET_DATE = "2026-09-03"
+DATASET_VERSION = "1.1.0"
+DATASET_DATE = "2026-09-04"
 
 
 KNOWN_STANDARDS: dict[str, dict[str, str]] = {
+    "bs-en-10365": {
+        "id": "bs-en-10365",
+        "name": "BS EN 10365",
+        "region": "United Kingdom",
+        "revision": "2017",
+        "description": "Hot rolled steel channels, I and H sections - the UK universal beam, "
+                       "column and bearing pile ranges.",
+    },
     "en-10210": {
         "id": "en-10210",
         "name": "EN 10210",
@@ -1086,7 +1510,7 @@ def main() -> int:
 
     report = Report()
 
-    european = compile_european(manifest, report)
+    european = compile_book(manifest, report) + compile_european(manifest, report)
     american = compile_american(manifest, report)
 
     report.summarise(european, "European sections")

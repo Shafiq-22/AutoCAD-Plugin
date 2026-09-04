@@ -238,46 +238,73 @@ hand.
 
 | File | Records | Units | Contents |
 |---|---|---|---|
-| `data/structural-sections.json` | 581 | mm, kg/m | European sections: IPE, HEA, HEB, HEM, CHS, RHS, SHS, plus hand-written channels, angles, plates, bars and fasteners |
+| `data/structural-sections.json` | 1,038 | mm, kg/m | European and UK sections: IPE, HE, HD, HL, HLZ, HP, UB, UC, UBP, CHS, RHS, SHS, plus hand-written channels, angles, plates, bars and fasteners |
 | `data/aisc-sections.json` | 1,660 | in, lb/ft | American shapes: W, M, S, HP, C, MC, L, WT, MT, ST, HSS, Pipe |
 | `data/structural-sections-imperial-demo.json` | 3 | in, lb/ft | A miniature file kept only to demonstrate the unit declaration |
 
-The bulk of that is **compiled, not typed**. `tools/data-sources/compile_sections.py` reads two
-public, permissively licensed packages — pinned by version and SHA-256 in
-`tools/data-sources/sources.json` — and converts what they publish into this format:
+Almost all of that is **compiled, not typed**. `tools/data-sources/compile_sections.py` reads three
+sources, each pinned by SHA-256 in `tools/data-sources/sources.json`, and converts what they publish
+into this format:
 
-- **[eurocodepy](https://github.com/pcachim/eurocodepy)** (MIT) for the European sections, which
-  publishes them in centimetres and kilograms per metre.
-- **[steelpy](https://pypi.org/project/steelpy/)** (Apache-2.0) for the American shapes, which is a
-  transcription of the AISC Shapes Database v16.0 in inches and pounds per foot.
+| Source | Provides |
+|---|---|
+| **`tools/data-sources/Steel_Section_Properties.xlsx`** — verbatim exports of the [ArcelorMittal Orange Book](https://orangebook.arcelormittal.com) (produced by SCI, dimensions to EN 10365:2017) and the SCI [Blue Book](https://www.steelforlifebluebook.co.uk) | 547 European and UK I and H sections |
+| **[eurocodepy](https://github.com/pcachim/eurocodepy)** (MIT) | 410 hollow sections: CHS, RHS, SHS |
+| **[steelpy](https://pypi.org/project/steelpy/)** (Apache-2.0), a transcription of the AISC Shapes Database v16.0 | 1,660 American shapes |
 
 Compiling rather than transcribing is the point. Running the script again on the same pinned inputs
 produces byte-identical files, so a reviewer can re-run it and diff instead of taking several
-thousand numbers on trust — and CI does exactly that on every push. Every record names the package,
-version and file it came from in its own `provenance`.
+thousand numbers on trust — and CI does exactly that on every push. Every record names the source,
+sheet or file it came from in its own `provenance`.
 
-Nothing was invented to fill a gap. Where a source does not publish a value it is left out and the
-profile is drawn without it. Two derivations were made, and both are stated in the provenance of
-every record they touch and justified by measurement:
+> **Copyright.** The Orange Book sheets are © 2023 SCI and ArcelorMittal Commercial Sections S.A.,
+> the Blue Book sheets are © SCI, and the AISC data is © AISC with redistribution subject to AISC's
+> terms. The repository's MIT licence covers its own code, not these tables. If you intend to publish
+> this repository, check those terms.
 
-- **The fillet radius of AISC W, HP and WT shapes** is reconstructed as `k - tf`, which is AISC's
-  own definition of the design distance `k`. Applying it brings the computed area of all 289 W
-  shapes to within 0.73% of the independently tabulated area, against 2.72% with no fillet.
-  It is *not* applied to the tapered-flange families, where `k` also swallows the taper and the
-  reconstruction makes the shape worse — measured, and recorded in the script.
-- **The inside corner radius of the European hollow sections** is stated as `1.0t` rather than left
-  to be derived as `ro - t`. That is EN 10210's hot-finished corner profile, and it reproduces all
-  248 tabulated rectangular and square areas to within 0.42%, against 2.87% for a uniform wall.
+### How the data is checked
+
+Three independent checks, all run by the test suite or the compiler on every push:
+
+1. **Every published area is compared against the outline StructureGen draws from that record's own
+   dimensions.** Both figures come from the same table but were arrived at independently, so a
+   column read into the wrong field breaks the agreement. All 2,698 records pass within 2%.
+2. **Every published mass is compared against the area of that outline**, at a constant density.
+3. **158 UK sections are compared against a second, independently produced publication.** The Orange
+   Book and the Blue Book agree on every dimension and every mass — with one exception, below.
+
+### The decisions that were not obvious
+
+Nothing was invented to fill a gap: where a source publishes no value, none is written. Four
+judgements were made, each stated in the provenance of every record it touches:
+
+- **The root radius of 131 UK sections** is taken from the Blue Book rather than the Orange Book.
+  The two agree on everything else, but the Orange Book prints a rounded figure — 20.0 mm across a
+  whole range of different sections — where the Blue Book prints 19.1 or 17.8. The tie is broken by
+  asking which radius accounts for the cross-sectional area the *Orange Book itself* prints in the
+  same row: the Blue Book's does, to 0.11% on average against 0.25%, and 0.52% at worst against
+  1.53%.
+- **The fillet radius of AISC W, HP and WT shapes** is reconstructed as `k - tf`, AISC's own
+  definition of the design distance `k`. It brings all 289 W shapes to within 0.73% of their
+  tabulated area, against 2.72% with no fillet. It is deliberately *not* applied to the
+  tapered-flange families, where `k` also swallows the taper and the reconstruction makes the shape
+  worse — measured per family, with the figures recorded in the script.
+- **The inside corner radius of the European hollow sections** is stated as `1.0t` rather than
+  derived as `ro - t`. That is EN 10210's hot-finished corner, and it reproduces all 248 tabulated
+  areas to within 0.42%, against 2.87% for a uniform wall. It is also why those records are filed
+  under EN 10210 rather than EN 10219 — an inference from the data, stated as one.
+- **Six shapes** carry their tabulated area under `properties` rather than `dimensions`, because the
+  outline cannot reproduce it within 2%.
 
 ### Known approximations in the shipped data
 
 - **Hollow section corners.** AISC publishes no corner radius for HSS, so they are drawn with square
-  corners. On a small, thick-walled section that over-states the area by up to about 13%. The
-  schedule is unaffected — weight comes from the tabulated mass per foot, not from the outline.
+  corners — up to about 13% over-stated in area on a small, thick-walled section. The schedule is
+  unaffected: weight comes from the tabulated mass, not from the outline.
 - **Tapered flanges.** UPN, and the AISC S, C, MC and ST families, are drawn with parallel flanges.
-- **Six shapes** — five in the M and MT families and HP8X36 — carry their tabulated area under
-  `properties` rather than `dimensions`, because the outline cannot reproduce it within 2%. Each
-  says so in its own provenance.
+- **Aliased sections.** Some sections are published twice under different names — an `HD 260 x 172`
+  and an `HE 260 M` are the same rolled section with identical dimensions and mass. Both ship,
+  because a fabricator orders by whichever designation their market uses.
 
 ## Verification
 
@@ -285,7 +312,7 @@ Every record has a `verified` flag, defaulting to `false`.
 
 Unverified records are flagged on the palette when selected, marked on the schedule, counted in the
 exported workbook, and reported by `SGRELOADDB`. **Every record in every shipped dataset is
-unverified**, and a test fails the build if one ever is not. An upstream package is not a controlled
+unverified**, and a test fails the build if one ever is not. A published export is not a controlled
 copy of a standard, and this project has no standing to say otherwise on your behalf.
 
 Set `"verified": true` only on records you personally have checked, and use `provenance` to record

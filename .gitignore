@@ -42,3 +42,7 @@ Thumbs.db
 # tools/data-sources/compile_sections.py --download and pinned by checksum in sources.json,
 # so there is nothing to gain from committing several hundred kilobytes of third-party archive.
 tools/data-sources/_cache/
+
+# Python bytecode from the data-compilation tool.
+__pycache__/
+*.pyc

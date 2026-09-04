@@ -1,8 +1,8 @@
 # Where the section data comes from
 
 The section databases StructureGen ships are **compiled, not typed**. `compile_sections.py` reads
-two public, permissively licensed packages and converts what they publish into StructureGen's own
-format, recording per record exactly where each number came from.
+published section tables and converts what they publish into StructureGen's own format, recording
+per record exactly where each number came from.
 
 ```
 python3 compile_sections.py --download   # fetch the pinned wheels into ./_cache
@@ -10,7 +10,9 @@ python3 compile_sections.py --check      # compile in memory, print the report, 
 python3 compile_sections.py              # compile and write data/*.json
 ```
 
-It needs nothing but Python 3.9 and network access to PyPI on the first run.
+It needs nothing but Python 3.9, and network access to PyPI on the first run to fetch the two
+pinned wheels. The workbook is committed here, and the XLSX reader beside it (`minixlsx.py`) is
+about a hundred lines of zipfile and ElementTree, so nothing has to be installed to read it.
 
 ## Why compile
 
@@ -22,16 +24,21 @@ and fails if the committed files are not what the compiler currently produces.
 
 ## The sources
 
-| Package | Licence | Provides |
+| Source | Licence / copyright | Provides |
 |---|---|---|
-| [eurocodepy](https://github.com/pcachim/eurocodepy) | MIT | IPE, HEA, HEB, HEM, CHS, RHS, SHS, in centimetres and kg/m |
-| [steelpy](https://pypi.org/project/steelpy/) | Apache-2.0 | AISC Shapes Database v16.0 — W, M, S, HP, C, MC, L, WT, MT, ST, HSS, Pipe, in inches and lb/ft |
+| `Steel_Section_Properties.xlsx` — verbatim exports of the [ArcelorMittal Orange Book](https://orangebook.arcelormittal.com) and the SCI [Blue Book](https://www.steelforlifebluebook.co.uk) | © 2023 SCI and ArcelorMittal Commercial Sections S.A.; © SCI. Supplied by the repository owner. | 547 European and UK I and H sections: IPE, HE, HD, HL, HLZ, HP, UB, UC, UBP |
+| [eurocodepy](https://github.com/pcachim/eurocodepy) | MIT | 410 hollow sections: CHS, RHS, SHS |
+| [steelpy](https://pypi.org/project/steelpy/) | Apache-2.0 | AISC Shapes Database v16.0: W, M, S, HP, C, MC, L, WT, MT, ST, HSS, Pipe |
 
-Both are pinned by version and SHA-256 in `sources.json`, and the checksum is verified on every run.
-A changed checksum stops the compilation rather than quietly folding new numbers into the output.
+All three are pinned by SHA-256 in `sources.json` and the checksum is verified on every run. A
+changed checksum stops the compilation rather than quietly folding new numbers into the output.
 
-Neither package is redistributed here. Only the numbers they publish are, converted and attributed.
-Neither is an Autodesk product and no Autodesk data is involved.
+The workbook is committed here rather than downloaded, because it was supplied rather than
+published at a stable URL, and the compilation has to be reproducible from the repository alone.
+Its Blue Book sheets are read but not compiled: they exist to check the Orange Book's numbers
+against a second, independently produced publication.
+
+Note the copyright column. The repository's MIT licence covers its own code, not these tables.
 
 ## What the compiler will not do
 
@@ -47,6 +54,19 @@ Neither is an Autodesk product and no Autodesk data is involved.
   with nothing, so the outline misses the tabulated *mass* too. Missing both by more than 8% fails
   the compilation.
 
+## Where the sources disagreed
+
+Two publications of the same UK sections agree on every dimension and every mass except the root
+radius, where the Orange Book prints a round 20.0 mm across a whole range of different sections and
+the Blue Book prints 19.1 or 17.8. One has been standardised, and the difference is large enough to
+change a drawn fillet.
+
+It is not settled by preferring a publisher. It is settled by asking which radius accounts for the
+cross-sectional area the *Orange Book itself* prints in the same row, since that area was computed
+from the real profile. Across the 131 sections where they differ, the Blue Book's radius reproduces
+the Orange Book's own area to 0.11% on average against 0.25%, and 0.52% at worst against 1.53%. So
+that is the radius drawn, and the record says so. See `better_radii`.
+
 ## Two derivations, and why they are not guesses
 
 `_fillet_from_k` reconstructs the fillet radius of AISC shapes as `k - tf`, which is AISC's own
@@ -61,8 +81,10 @@ the data, stated as one in every affected record's provenance.
 
 ## What is still hand-written
 
-European channels (UPN), European angles, plates, flat and round bars, and the ISO fasteners. No
-permissively licensed machine-readable source was found for them, so the small hand-transcribed set
-from the original demonstration dataset is left alone; the compiler merges around it rather than
-replacing it. If you have authoritative tables for those, importing them with
+European channels (UPN), European angles, plates, flat and round bars, and the ISO fasteners. The
+workbook does not cover them and no permissively licensed machine-readable source was found, so the
+small hand-transcribed set from the original demonstration dataset is left alone; the compiler
+merges around it rather than replacing it. It recognises its own past output by the phrase every
+record it writes carries in its provenance, so replacing a source removes the records that source
+produced instead of leaving them beside their replacements. If you have authoritative tables for those, importing them with
 `StructureGen.DataImport` is the intended route — see `docs/DATABASE.md`.
