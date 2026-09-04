@@ -84,6 +84,15 @@ def download(manifest: dict[str, Any]) -> None:
     CACHE.mkdir(exist_ok=True)
 
     for source in manifest["sources"]:
+        # Not every source is fetched. The workbook of published tables is committed beside this
+        # script, because it was supplied rather than published at a stable address, so there is
+        # nothing to download - but its checksum is still worth confirming here, since that is
+        # what this pass is for.
+        if source.get("kind") == "workbook":
+            verify_workbook(source)
+            print(f"  {source['file']}: checksum matches")
+            continue
+
         target = CACHE / source["wheel"]
 
         if not target.exists():
@@ -105,6 +114,24 @@ def download(manifest: dict[str, Any]) -> None:
             )
 
         print(f"  {source['wheel']}: checksum matches")
+
+
+def verify_workbook(source: dict[str, Any]) -> Path:
+    """Confirms the committed workbook is the one sources.json pins, and returns its path."""
+    path = HERE / source["file"]
+
+    if not path.exists():
+        raise SystemExit(f"{path} is missing; it is committed alongside this script.")
+
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+
+    if digest != source["sha256"]:
+        raise SystemExit(
+            f"{source['file']} has checksum {digest}, but sources.json pins {source['sha256']}. "
+            "The workbook has changed, which needs reviewing before its numbers are shipped."
+        )
+
+    return path
 
 
 def open_source(source: dict[str, Any]) -> zipfile.ZipFile:
@@ -481,17 +508,7 @@ def read_book_sheet(rows: list[list[Any]]) -> list[dict[str, Any]]:
 def compile_book(manifest: dict[str, Any], report: "Report") -> list[dict[str, Any]]:
     """Compiles the European sections from the supplied workbook of published tables."""
     source = next(s for s in manifest["sources"] if s["key"] == "orange-book")
-    path = HERE / source["file"]
-
-    if not path.exists():
-        raise SystemExit(f"{path} is missing; it is committed alongside this script.")
-
-    digest = hashlib.sha256(path.read_bytes()).hexdigest()
-    if digest != source["sha256"]:
-        raise SystemExit(
-            f"{source['file']} has checksum {digest}, but sources.json pins {source['sha256']}. "
-            "The workbook has changed, which needs reviewing before its numbers are shipped."
-        )
+    path = verify_workbook(source)
 
     sections: list[dict[str, Any]] = []
     parsed: dict[str, list[dict[str, Any]]] = {}
