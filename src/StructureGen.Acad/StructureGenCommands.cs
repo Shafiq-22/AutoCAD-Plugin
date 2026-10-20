@@ -181,6 +181,48 @@ namespace StructureGen.Acad
             }
         });
 
+        /// <summary>
+        /// Draws two-dimensional plan drawings of the generated elements: either a general
+        /// arrangement plan of everything in model space where it actually is, or a sheet with one
+        /// plan per distinct item.
+        /// </summary>
+        [CommandMethod("SGPLAN", CommandFlags.Modal)]
+        public void DrawPlan() => Run("SGPLAN", editor =>
+        {
+            PromptKeywordOptions options = new("\nPlan drawing of");
+            options.Keywords.Add("Arrangement");
+            options.Keywords.Add("Items");
+            options.Keywords.Default = "Arrangement";
+            options.AllowNone = true;
+
+            PromptResult choice = editor.GetKeywords(options);
+            if (choice.Status != PromptStatus.OK)
+            {
+                return;
+            }
+
+            PlanLayout layout = choice.StringResult == "Items" ? PlanLayout.Items : PlanLayout.Arrangement;
+
+            Result<PlanDrawingOutcome> drawn = StructureGenApplication.CadService.DrawPlan(
+                new PlanDrawingOptions { Layout = layout }, HarvestScope.ModelSpace);
+
+            if (drawn.IsFailure)
+            {
+                editor.WriteMessage($"\n{drawn.ErrorMessage}");
+                return;
+            }
+
+            editor.WriteMessage($"\n{drawn.Value.ToDisplayString()}");
+
+            if (drawn.Report is { } report)
+            {
+                foreach (ValidationMessage message in report.Messages.Where(m => m.Severity >= Severity.Warning).Take(10))
+                {
+                    editor.WriteMessage($"\n  ! {message.Message}");
+                }
+            }
+        });
+
         /// <summary>Builds a bill of materials from the drawing and exports it straight to a workbook.</summary>
         [CommandMethod("SGBOMEXPORT", CommandFlags.Modal)]
         public void ExportBillOfMaterials() => Run("SGBOMEXPORT", editor =>

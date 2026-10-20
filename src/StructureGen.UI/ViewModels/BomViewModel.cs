@@ -51,6 +51,10 @@ namespace StructureGen.UI.ViewModels
             InsertInLayoutCommand = new RelayCommand(
                 () => InsertTable(BomTablePlacement.CurrentLayout), () => CanPlaceInDrawing);
             ExportCommand = new RelayCommand(Export, () => _document is { IsEmpty: false });
+            DrawArrangementPlanCommand = new RelayCommand(
+                () => DrawPlan(PlanLayout.Arrangement), () => _cad.HasActiveDocument);
+            DrawItemPlansCommand = new RelayCommand(
+                () => DrawPlan(PlanLayout.Items), () => _cad.HasActiveDocument);
         }
 
         /// <summary>Gets the schedule lines currently displayed.</summary>
@@ -70,6 +74,12 @@ namespace StructureGen.UI.ViewModels
 
         /// <summary>Gets the command that exports the schedule to a workbook.</summary>
         public RelayCommand ExportCommand { get; }
+
+        /// <summary>Gets the command that draws a plan of everything in model space where it is.</summary>
+        public RelayCommand DrawArrangementPlanCommand { get; }
+
+        /// <summary>Gets the command that draws one plan per distinct item in model space.</summary>
+        public RelayCommand DrawItemPlansCommand { get; }
 
         /// <summary>Gets the schedule currently displayed, if any.</summary>
         public BomDocument? Document => _document;
@@ -188,6 +198,31 @@ namespace StructureGen.UI.ViewModels
 
             Result<string> inserted = _cad.InsertBomTable(_document, placement);
             _status(inserted.IsSuccess ? $"Schedule table created ({inserted.Value})." : inserted.ErrorMessage!);
+        }
+
+        private void DrawPlan(PlanLayout layout)
+        {
+            Result<PlanDrawingOutcome> drawn = _cad.DrawPlan(new PlanDrawingOptions { Layout = layout }, HarvestScope.ModelSpace);
+
+            if (drawn.IsFailure)
+            {
+                _status(drawn.ErrorMessage!);
+                return;
+            }
+
+            string warnings = drawn.Report is { HasWarnings: true } report
+                ? $" {report.WarningCount} warning(s) are on the command line."
+                : string.Empty;
+
+            if (drawn.Report is { HasWarnings: true } shown)
+            {
+                foreach (ValidationMessage message in shown.Messages.Where(m => m.Severity >= Severity.Warning).Take(10))
+                {
+                    _cad.WriteMessage("  ! " + message.Message);
+                }
+            }
+
+            _status(drawn.Value.ToDisplayString() + warnings);
         }
 
         private void Export()

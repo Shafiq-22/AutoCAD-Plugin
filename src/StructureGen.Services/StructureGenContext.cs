@@ -36,7 +36,8 @@ namespace StructureGen.Services
             ElementGeneratorRegistry generators,
             ElementFactory elements,
             MassCalculator mass,
-            BomService bom)
+            BomService bom,
+            PlanDrawingService plans)
         {
             Logger = logger;
             SettingsStore = settingsStore;
@@ -46,6 +47,7 @@ namespace StructureGen.Services
             Elements = elements;
             Mass = mass;
             Bom = bom;
+            Plans = plans;
         }
 
         /// <summary>Gets the logger every component writes technical detail to.</summary>
@@ -71,6 +73,9 @@ namespace StructureGen.Services
 
         /// <summary>Gets the bill of materials service.</summary>
         public BomService Bom { get; }
+
+        /// <summary>Gets the service that composes two-dimensional plan drawings.</summary>
+        public PlanDrawingService Plans { get; }
 
         /// <summary>
         /// Gets the report produced by the initial database load, so the host can show it once at
@@ -115,9 +120,10 @@ namespace StructureGen.Services
             MassCalculator mass = new(generators);
             BomWorkbookBuilder workbooks = new(resolvedLogger);
             BomService bom = new(mass, database, workbooks, resolvedLogger);
+            PlanDrawingService plans = new(generators, resolvedLogger);
 
             StructureGenContext context = new(
-                resolvedLogger, resolvedStore, settings, database, generators, elements, mass, bom);
+                resolvedLogger, resolvedStore, settings, database, generators, elements, mass, bom, plans);
 
             context.StartupLoadResult = database.Load(settings.DatabasePath);
 

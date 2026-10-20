@@ -111,7 +111,28 @@ Do the StructureGen edits first.
 ## 7. The two-dimensional representation is a section outline
 
 `Profile2D` draws the true cross-section as closed polylines. It is not a plan or elevation view of
-the member, and there is no automatic dimensioning, hatching or annotation.
+the member, and there is no automatic dimensioning, hatching or annotation. For plan views, use
+`SGPLAN` (see 7a).
+
+## 7a. Plan drawings are projections, not a hidden-line engine
+
+`SGPLAN` works from the same CAD-neutral geometry the solids are built from, not from AutoCAD's own
+`FLATSHOT`, so it runs anywhere and is unit tested, but it reasons about one element at a time:
+
+- **One element does not hide another.** A beam passing under another beam is drawn with continuous
+  lines where a drafter would dash the hidden part. Overlaps between elements are left for you to
+  tidy.
+- **Inclined members are close, not exact, near their ends.** For a member that is neither level nor
+  plumb, longitudinal edges are classified from the cross-section alone. That is exact along the
+  run of the member and approximate within about a section depth of each end, where the end faces
+  are drawn foreshortened (visible at the upper end, hidden at the lower).
+- **End views classify whole segments.** Seen end on, an edge partly under a nearer part is drawn
+  hidden or visible as a whole, judged at its midpoint, rather than split where the cover ends.
+- **Scaled references are drawn at their generated size.** Elements are read back by position and
+  orientation; a reference scaled by hand with `SCALE` is drawn as generated, the same way the
+  schedule counts it.
+- **No dimensions or hatching** are added, and label positions are a starting point rather than a
+  laid-out drawing.
 
 ## 8. The schedule table is a snapshot
 

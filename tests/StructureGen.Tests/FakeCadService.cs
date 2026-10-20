@@ -66,5 +66,13 @@ namespace StructureGen.Tests
 
         public Result<string> InsertBomTable(BomDocument document, BomTablePlacement placement) =>
             Result<string>.Failure("Fake.NotSupported", "There is no drawing to insert into.");
+
+        public List<(PlanDrawingOptions Options, HarvestScope Scope)> PlanRequests { get; } = new();
+
+        public Result<PlanDrawingOutcome> DrawPlan(PlanDrawingOptions options, HarvestScope scope)
+        {
+            PlanRequests.Add((options, scope));
+            return Result<PlanDrawingOutcome>.Failure("Fake.NotSupported", "There is no drawing to draw a plan in.");
+        }
     }
 }

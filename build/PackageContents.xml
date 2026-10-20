@@ -50,6 +50,7 @@
         <Command Global="SGSHOW" Local="SGSHOW" />
         <Command Global="SGBOM" Local="SGBOM" />
         <Command Global="SGBOMEXPORT" Local="SGBOMEXPORT" />
+        <Command Global="SGPLAN" Local="SGPLAN" />
         <Command Global="SGUPDATE" Local="SGUPDATE" />
         <Command Global="SGRELOADDB" Local="SGRELOADDB" />
         <Command Global="SGSETTINGS" Local="SGSETTINGS" />
@@ -75,6 +76,7 @@
         <Command Global="SGSHOW" Local="SGSHOW" />
         <Command Global="SGBOM" Local="SGBOM" />
         <Command Global="SGBOMEXPORT" Local="SGBOMEXPORT" />
+        <Command Global="SGPLAN" Local="SGPLAN" />
         <Command Global="SGUPDATE" Local="SGUPDATE" />
         <Command Global="SGRELOADDB" Local="SGRELOADDB" />
         <Command Global="SGSETTINGS" Local="SGSETTINGS" />
@@ -100,6 +102,7 @@
         <Command Global="SGSHOW" Local="SGSHOW" />
         <Command Global="SGBOM" Local="SGBOM" />
         <Command Global="SGBOMEXPORT" Local="SGBOMEXPORT" />
+        <Command Global="SGPLAN" Local="SGPLAN" />
         <Command Global="SGUPDATE" Local="SGUPDATE" />
         <Command Global="SGRELOADDB" Local="SGRELOADDB" />
         <Command Global="SGSETTINGS" Local="SGSETTINGS" />

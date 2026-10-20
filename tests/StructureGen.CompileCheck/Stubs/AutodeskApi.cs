@@ -51,6 +51,7 @@ namespace Autodesk.AutoCAD.Geometry
         public Point3d(double x, double y, double z) { X = x; Y = y; Z = z; }
         public double X { get; } public double Y { get; } public double Z { get; }
         public static Point3d Origin => new(0, 0, 0);
+        public Point3d TransformBy(Matrix3d m) => this;
         public static Vector3d operator -(Point3d left, Point3d right) =>
             new(left.X - right.X, left.Y - right.Y, left.Z - right.Z);
     }
@@ -67,6 +68,14 @@ namespace Autodesk.AutoCAD.Geometry
         public Vector3d TransformBy(Matrix3d m) => this;
     }
 
+    public readonly struct CoordinateSystem3d
+    {
+        public Point3d Origin => default;
+        public Vector3d Xaxis => default;
+        public Vector3d Yaxis => default;
+        public Vector3d Zaxis => default;
+    }
+
     public struct Extents3d
     {
         public Extents3d(Point3d minimum, Point3d maximum) { MinPoint = minimum; MaxPoint = maximum; }
@@ -81,6 +90,7 @@ namespace Autodesk.AutoCAD.Geometry
         public static Matrix3d Displacement(Vector3d v) => new();
         public static Matrix3d Rotation(double angle, Vector3d axis, Point3d centre) => new();
         public static Matrix3d PlaneToWorld(Vector3d normal) => new();
+        public CoordinateSystem3d CoordinateSystem3d => default;
         public Matrix3d Inverse() => this;
         public static Matrix3d operator *(Matrix3d left, Matrix3d right) => left;
         public static Matrix3d AlignCoordinateSystem(
@@ -102,6 +112,9 @@ namespace Autodesk.AutoCAD.DatabaseServices
     public enum OpenMode { ForRead, ForWrite }
     public enum BooleanOperationType { BoolUnite, BoolSubtract, BoolIntersect }
     public enum BlockScaling { Any, Uniform }
+    public enum MeasurementValue { English, Metric }
+    public enum TextHorizontalMode { TextLeft, TextCenter, TextRight }
+    public enum TextVerticalMode { TextBase, TextBottom, TextVerticalMid, TextTop }
     public enum UnitsValue { Undefined, Inches, Feet, Millimeters, Centimeters, Meters, Decimeters, Kilometers }
     public enum CellAlignment { TopLeft, MiddleLeft, MiddleCenter, MiddleRight, BottomRight }
 
@@ -122,6 +135,10 @@ namespace Autodesk.AutoCAD.DatabaseServices
         public static ObjectId Null => default;
         public bool IsNull => true;
         public bool IsErased => false;
+        public static bool operator ==(ObjectId left, ObjectId right) => true;
+        public static bool operator !=(ObjectId left, ObjectId right) => false;
+        public override bool Equals(object? obj) => obj is ObjectId;
+        public override int GetHashCode() => 0;
     }
 
     public sealed class ObjectIdCollection : IDisposable
@@ -166,6 +183,7 @@ namespace Autodesk.AutoCAD.DatabaseServices
         public ResultBuffer? XData { get; set; }
         public void TransformBy(Matrix3d m) { }
         public void SetDatabaseDefaults(Database? db) { }
+        public double LinetypeScale { get; set; } = 1d;
         public Extents3d GeometricExtents => default;
     }
 
@@ -203,6 +221,7 @@ namespace Autodesk.AutoCAD.DatabaseServices
     {
         public BlockReference(Point3d position, ObjectId blockTableRecord) { }
         public ObjectId BlockTableRecord { get; set; }
+        public Matrix3d BlockTransform => new();
     }
 
     public sealed class BlockTableRecord : DBObject, IEnumerable<ObjectId>
@@ -228,12 +247,31 @@ namespace Autodesk.AutoCAD.DatabaseServices
     {
         public string Name { get; set; } = string.Empty;
         public Colors.Color Color { get; set; } = Colors.Color.FromColorIndex(Colors.ColorMethod.ByAci, 7);
+        public ObjectId LinetypeObjectId { get; set; }
     }
 
     public sealed class LayerTable : DBObject
     {
         public bool Has(string name) => false;
         public ObjectId Add(LayerTableRecord record) => default;
+    }
+
+    public sealed class LinetypeTable : DBObject
+    {
+        public bool Has(string name) => false;
+        public ObjectId this[string name] => default;
+    }
+
+    public sealed class DBText : Entity
+    {
+        public string TextString { get; set; } = string.Empty;
+        public double Height { get; set; }
+        public double Rotation { get; set; }
+        public Point3d Position { get; set; }
+        public Point3d AlignmentPoint { get; set; }
+        public TextHorizontalMode HorizontalMode { get; set; }
+        public TextVerticalMode VerticalMode { get; set; }
+        public void AdjustAlignment(Database db) { }
     }
 
     public sealed class RegAppTableRecord : DBObject { public string Name { get; set; } = string.Empty; }
@@ -328,6 +366,10 @@ namespace Autodesk.AutoCAD.DatabaseServices
         public UnitsValue Insunits => UnitsValue.Millimeters;
         public ObjectId BlockTableId => default;
         public ObjectId LayerTableId => default;
+        public ObjectId LinetypeTableId => default;
+        public MeasurementValue Measurement => MeasurementValue.Metric;
+        public double Ltscale => 1d;
+        public void LoadLineTypeFile(string name, string file) { }
         public ObjectId RegAppTableId => default;
         public ObjectId NamedObjectsDictionaryId => default;
         public ObjectId LayoutDictionaryId => default;
@@ -380,7 +422,7 @@ namespace Autodesk.AutoCAD.EditorInput
     // with the mistake instead of catching it. See tests/StructureGen.CompileCheck/README.md.
     public sealed class SelectionFilter { public SelectionFilter(DatabaseServices.TypedValue[] values) { } }
 
-    public class PromptOptions { public PromptOptions(string message) { } }
+    public class PromptOptions { public PromptOptions(string message) { } public KeywordCollection Keywords { get; } = new(); }
 
     public sealed class PromptPointOptions : PromptOptions
     {
@@ -402,7 +444,6 @@ namespace Autodesk.AutoCAD.EditorInput
     public sealed class PromptKeywordOptions : PromptOptions
     {
         public PromptKeywordOptions(string message) : base(message) { }
-        public KeywordCollection Keywords { get; } = new();
         public bool AllowNone { get; set; }
     }
 
@@ -427,6 +468,7 @@ namespace Autodesk.AutoCAD.EditorInput
         public ViewTableRecord GetCurrentView() => new();
         public void SetCurrentView(ViewTableRecord view) { }
         public void UpdateScreen() { }
+        public Matrix3d CurrentUserCoordinateSystem => new();
         public void Regen() { }
     }
 }

@@ -63,6 +63,13 @@ how it was reached and writes the arithmetic out in full.
 formats, totals, and a sheet recording exactly which data revision the numbers came from. **Microsoft
 Excel is not required** — StructureGen writes the format itself.
 
+**Draws 2D plan drawings of everything it generated.** `SGPLAN` projects every element onto the plan
+plane as a drafter would draw it: flange edges as continuous lines, webs and pipe bores dashed where
+they sit under material, centre lines on round members, columns and upright bolts as their true
+cross-section. Choose a general arrangement plan of the whole model, placed anywhere or laid exactly
+over it, or a sheet with one labelled plan per distinct item and its quantity. It reads where each
+element actually is now, so members moved, rotated or mirrored by hand are drawn where they ended up.
+
 **Draws thousands of elements without bogging down.** Identical geometry shares one block definition,
 so a thousand identical bolts cost one definition and a thousand lightweight references.
 
@@ -209,6 +216,7 @@ Detail, and an honest account of what has and has not been verified:
 | `SGSHOW` | Brings every StructureGen element in the drawing into view |
 | `SGBOM` | Builds the schedule; offers a table or an export |
 | `SGBOMEXPORT` | Builds the schedule and exports it straight to a workbook |
+| `SGPLAN` | Draws a 2D plan: an arrangement of the whole model, or one plan per item |
 | `SGUPDATE` | Rebuilds selected elements from their stored parameters |
 | `SGRELOADDB` | Reloads the structural database |
 | `SGSETTINGS` | Opens the settings |

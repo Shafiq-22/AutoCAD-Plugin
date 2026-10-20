@@ -306,6 +306,12 @@
                             <Button Content="Preview from list" Command="{Binding Bom.PreviewFromListCommand}" MinWidth="120"
                                     ToolTip="Shows what the working list would weigh. Nothing is drawn." />
                         </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                            <Button Content="Arrangement plan" Command="{Binding Bom.DrawArrangementPlanCommand}" MinWidth="130"
+                                    ToolTip="Draws a 2D plan of every element in model space, seen from above where it actually sits. Pick a corner, or choose Inplace to lay it over the model." />
+                            <Button Content="Item plans" Command="{Binding Bom.DrawItemPlansCommand}" MinWidth="110"
+                                    ToolTip="Draws one labelled 2D plan for each distinct item in model space, with its quantity." />
+                        </StackPanel>
                         <TextBlock Margin="0,6,0,0" TextWrapping="Wrap" Style="{StaticResource Hint}"
                                    Text="{Binding Bom.SourceDescription}" />
                         <TextBlock Style="{StaticResource Warning}" Text="{Binding Bom.Caveats}"

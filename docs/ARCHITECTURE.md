@@ -35,6 +35,7 @@ Result<GenerationSummary>                 Generate(GenerationRequest request);
 Result<string>                            UpdateElement(string handle, ElementDefinition definition);
 Result<IReadOnlyList<BomEntry>>           HarvestElements(HarvestScope scope);
 Result<string>                            InsertBomTable(BomDocument bom, BomTablePlacement placement);
+Result<PlanDrawingOutcome>                DrawPlan(PlanDrawingOptions options, HarvestScope scope);
 ```
 
 Not one AutoCAD type appears in it. `Vec3` and `Placement` are StructureGen's own, and the AutoCAD
@@ -137,6 +138,27 @@ flag ensures a non-conforming member is never hidden inside the count of a confo
 excluded from the totals, and counted in a caveat that travels with the schedule everywhere it is
 shown, drawn or exported. Every line records how its weight was reached and writes the arithmetic
 out in full.
+
+## Plan drawings from the same geometry
+
+`SGPLAN` does not ask AutoCAD to flatten anything. `PlanViewBuilder` takes the CAD-neutral
+`ElementGeometry` an element was generated from and the frame it now sits in — read back from the
+block reference's own transform, so moves, rotations and mirrors are honoured — and projects it onto
+world XY.
+
+A member lying across the line of sight shows one longitudinal line for every edge of its section
+that faces the viewer edge on: every corner, and every place a curved face turns parallel to the line
+of sight. Whether a line is hidden is decided by casting the line of sight through the section just
+either side of the edge, and counting material only when it is found on both sides: that is what lets
+the face of a web graze its own line of sight without hiding itself, while the flange above still
+hides it. A member seen end on is drawn as its cross-section, with arcs kept as bulges, and any part
+covered by a nearer part — a bolt shank under its head — is hidden.
+
+`PlanDrawingService` lays the views out as an arrangement or as an item sheet and adds labels. Its
+output is lines, bulges and text in millimetres; `PlanWriter` in the AutoCAD layer is a direct
+translation into polylines, text, layers and linetypes. Every rule above is therefore tested without
+AutoCAD, against figures that can be checked by hand: the flange edges of an IPE 300 at ±75 mm and
+its web at ±3.55 mm.
 
 ## Spreadsheets without a library
 

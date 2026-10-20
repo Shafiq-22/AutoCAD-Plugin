@@ -91,6 +91,43 @@ Then:
   respects the drawing's table style and stays editable. It is a snapshot; re-run for a fresh one.
 - **Export to Excel** — writes a `.xlsx`. Excel is not required to produce it.
 
+## Plan drawings
+
+`SGPLAN`, or the **Arrangement plan** and **Item plans** buttons on the Bill of materials tab, draw
+two-dimensional plans of the elements in model space — what each one looks like seen from directly
+above.
+
+**Arrangement** — every element where it actually sits, which gives a general arrangement plan of
+the whole structure. Pick the lower left corner to place it clear of the model, or choose
+**Inplace** to lay it exactly over the model at elevation zero. Members are labelled with their
+designation and length along their length; fasteners are drawn but left unlabelled, since there
+are usually far more of them than there is room for labels.
+
+**Items** — one plan per distinct item, stacked down from the point you pick, each labelled with a
+number, its designation, its length and how many of it are in the drawing. Members and plates lie
+level, so the plan shows their top face; bolts, nuts and washers stand upright, head up, as they are
+fitted through a level flange. Items are grouped by shape — category, profile, dimensions, length
+and detail level — so two members that would look identical on the plan share one entry.
+
+How the lines are drawn:
+
+| Line | Layer | What it shows |
+|---|---|---|
+| Continuous | `SG-PLAN-VISIBLE` | Edges seen from above: flange edges, member ends, outlines |
+| Dashed (`HIDDEN`) | `SG-PLAN-HIDDEN` | Edges under material: an I beam's web, a pipe's bore, a bolt shank under its head |
+| Chain (`CENTER`) | `SG-PLAN-CENTRE` | Centre lines of pipes, round bars and bolts |
+| Text | `SG-PLAN-TEXT` | Labels and the title |
+
+The layer prefix is the one set in Settings. The linetypes are loaded for you from `acadiso.lin` or
+`acad.lin` to match the drawing's measurement system, and each line's dash length is scaled to the
+size of its member, so a dashed web looks the same on a small angle as on a deep beam. A layer that
+already exists keeps your styling.
+
+The plan is created as a single block named `SGPLAN_ARRANGEMENT_n` or `SGPLAN_ITEMS_n`, so it can be
+moved, copied or erased in one go. Explode it to edit the lines. It carries no StructureGen
+parameters, so it never appears on the bill of materials. Like the schedule table it is a snapshot:
+after changing the model, erase it and run `SGPLAN` again.
+
 ## The exported workbook
 
 | Sheet | Holds |
@@ -148,6 +185,7 @@ To convert your own spreadsheets, see `docs/DATABASE.md`.
 | `SGSHOW` | Brings every StructureGen element in the drawing into view |
 | `SGBOM` | Builds the schedule and offers a table or an export |
 | `SGBOMEXPORT` | Builds the schedule and exports it straight to a workbook |
+| `SGPLAN` | Draws a 2D plan: an arrangement of the whole model, or one plan per item |
 | `SGUPDATE` | Rebuilds selected elements from their stored parameters |
 | `SGRELOADDB` | Reloads the structural database |
 | `SGSETTINGS` | Opens the settings tab |

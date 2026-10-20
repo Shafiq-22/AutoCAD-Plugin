@@ -477,6 +477,127 @@ namespace StructureGen.Acad
         }
 
         /// <inheritdoc />
+        public Result<PlanDrawingOutcome> DrawPlan(PlanDrawingOptions options, HarvestScope scope)
+        {
+            options ??= new PlanDrawingOptions();
+
+            Document? document = AcadApplication.DocumentManager.MdiActiveDocument;
+            if (document is null)
+            {
+                return Result<PlanDrawingOutcome>.Failure("Cad.NoDocument", NoDocumentMessage);
+            }
+
+            try
+            {
+                Result<IReadOnlyList<PlacedElement>> harvested = DrawingHarvester.HarvestPlaced(document, scope, _logger);
+                if (harvested.IsFailure)
+                {
+                    return Result<PlanDrawingOutcome>.Failure(harvested.ErrorCode!, harvested.ErrorMessage!);
+                }
+
+                Result<PlanDrawing> composed = _context.Plans.Compose(harvested.Value, options);
+                if (composed.IsFailure)
+                {
+                    return Result<PlanDrawingOutcome>.Failure(composed.ErrorCode!, composed.ErrorMessage!, composed.Report);
+                }
+
+                PlanDrawing drawing = composed.Value;
+                Database database = document.Database;
+                double scale = ScaleFor(database);
+                Editor editor = document.Editor;
+
+                // An arrangement can sit exactly over the model it was taken from, or be moved
+                // clear of it. An item sheet has no true position, so it always asks.
+                bool arrangement = drawing.Layout == PlanLayout.Arrangement;
+                PromptPointOptions prompt = new(arrangement
+                    ? "\nPick the lower left corner of the plan"
+                    : "\nPick the top left corner of the item plans");
+
+                if (arrangement)
+                {
+                    prompt.Keywords.Add("Inplace");
+                }
+
+                PromptPointResult picked = editor.GetPoint(prompt);
+                bool inPlace = picked.Status == PromptStatus.Keyword;
+
+                if (picked.Status != PromptStatus.OK && !inPlace)
+                {
+                    return Result<PlanDrawingOutcome>.Failure("Cad.Cancelled", "No plan was drawn: point selection was cancelled.");
+                }
+
+                Vec2 basePoint = arrangement ? drawing.Anchor : Vec2.Zero;
+
+                // The picked point is in the current UCS; the plan is built in world coordinates.
+                Point3d insertion = inPlace
+                    ? new Point3d(basePoint.X * scale, basePoint.Y * scale, 0d)
+                    : picked.Value.TransformBy(editor.CurrentUserCoordinateSystem);
+
+                ValidationReport report = drawing.Report;
+                PlanDrawingOutcome outcome;
+                Extents3d? extents = null;
+
+                using (DocumentLock documentLock = document.LockDocument())
+                using (Transaction transaction = database.TransactionManager.StartTransaction())
+                {
+                    (ObjectId definitionId, string blockName) = PlanWriter.CreateDefinition(
+                        transaction, database, drawing, basePoint, scale, _context.Settings.LayerPrefix, report);
+
+                    BlockTableRecord space = (BlockTableRecord)transaction.GetObject(
+                        SymbolUtilityServices.GetBlockModelSpaceId(database), OpenMode.ForWrite);
+
+                    BlockReference reference = new(insertion, definitionId);
+
+                    try
+                    {
+                        space.AppendEntity(reference);
+                        transaction.AddNewlyCreatedDBObject(reference, true);
+                    }
+                    catch
+                    {
+                        reference.Dispose();
+                        throw;
+                    }
+
+                    Accumulate(ref extents, reference);
+                    outcome = new PlanDrawingOutcome(drawing, blockName, reference.Handle.ToString());
+
+                    transaction.TransactionManager.QueueForGraphicsFlush();
+                    transaction.Commit();
+                }
+
+                if (extents.HasValue)
+                {
+                    ZoomTo(document, extents.Value);
+                }
+                else
+                {
+                    editor.UpdateScreen();
+                }
+
+                _logger.Information(outcome.ToDisplayString());
+                return Result<PlanDrawingOutcome>.Success(outcome, report);
+            }
+            catch (Autodesk.AutoCAD.Runtime.Exception exception)
+            {
+                _logger.Error("Drawing the plan failed inside AutoCAD.", exception);
+                return Result<PlanDrawingOutcome>.Failure(
+                    "Cad.PlanFailed",
+                    "AutoCAD could not draw the plan, so nothing was added to the drawing. " +
+                    $"The reported problem was: {exception.Message}. Technical detail is in the StructureGen log file.");
+            }
+            catch (System.Exception exception)
+            {
+                // Reached from a palette button as well as a command; nothing may escape into AutoCAD.
+                _logger.Error("Drawing the plan failed.", exception);
+                return Result<PlanDrawingOutcome>.Failure(
+                    "Cad.PlanFailed",
+                    "The plan could not be drawn, so nothing was added to the drawing. " +
+                    $"The reported problem was: {exception.Message}. Technical detail is in the StructureGen log file.");
+            }
+        }
+
+        /// <inheritdoc />
         public void WriteMessage(string message)
         {
             Document? document = AcadApplication.DocumentManager.MdiActiveDocument;

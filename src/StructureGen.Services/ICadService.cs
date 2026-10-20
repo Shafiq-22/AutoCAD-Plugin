@@ -99,6 +99,15 @@ namespace StructureGen.Services
         /// <returns>The handle of the created table, or a failure carrying a user-facing reason.</returns>
         Result<string> InsertBomTable(BomDocument document, BomTablePlacement placement);
 
+        /// <summary>
+        /// Draws a two-dimensional plan of the StructureGen elements in the drawing, asking the user
+        /// where to put it.
+        /// </summary>
+        /// <param name="options">What the plan should contain and how it is laid out.</param>
+        /// <param name="scope">Which elements to include.</param>
+        /// <returns>What was drawn, or why nothing was.</returns>
+        Result<PlanDrawingOutcome> DrawPlan(PlanDrawingOptions options, HarvestScope scope);
+
         /// <summary>Writes a line to the AutoCAD command line.</summary>
         /// <param name="message">The message.</param>
         void WriteMessage(string message);

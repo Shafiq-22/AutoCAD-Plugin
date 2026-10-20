@@ -138,6 +138,22 @@ namespace StructureGen.Tests
             Assert.Equal("boom", thrown.Message);
         }
 
+        [Fact]
+        public void The_plan_buttons_ask_for_the_layout_they_name_and_report_a_refusal()
+        {
+            FakeCadService cad = Cad(EmptyRun(new ValidationReport()));
+            MainViewModel palette = Palette(cad);
+
+            palette.Bom.DrawArrangementPlanCommand.Execute(null);
+            palette.Bom.DrawItemPlansCommand.Execute(null);
+
+            Assert.Equal(
+                new[] { PlanLayout.Arrangement, PlanLayout.Items },
+                cad.PlanRequests.Select(r => r.Options.Layout));
+            Assert.All(cad.PlanRequests, r => Assert.Equal(HarvestScope.ModelSpace, r.Scope));
+            Assert.Contains("no drawing to draw a plan in", palette.Status);
+        }
+
         private static Func<GenerationRequest, Result<GenerationSummary>> EmptyRun(ValidationReport report) =>
             _ => Result<GenerationSummary>.Success(
                 new GenerationSummary(new Dictionary<Guid, IReadOnlyList<string>>(), 0, 0, report),

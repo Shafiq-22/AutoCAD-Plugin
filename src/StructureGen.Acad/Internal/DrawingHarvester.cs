@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
 using Autodesk.AutoCAD.EditorInput;
+using Autodesk.AutoCAD.Geometry;
 using StructureGen.Bom;
 using StructureGen.Core.Diagnostics;
+using StructureGen.Core.Geometry;
 using StructureGen.Core.Model;
 using StructureGen.Core.Results;
 using StructureGen.Services;
@@ -86,6 +88,87 @@ namespace StructureGen.Acad.Internal
 
             logger.Information($"Harvested {entries.Count} element(s) from the drawing ({scope}).");
             return Result<IReadOnlyList<BomEntry>>.Success(entries);
+        }
+
+        /// <summary>
+        /// Reads every generated element in scope together with where it actually sits now, which
+        /// may differ from where it was generated if it has been moved, copied, rotated or mirrored.
+        /// </summary>
+        /// <param name="document">The drawing.</param>
+        /// <param name="scope">Which elements to read. Model space reads only model space.</param>
+        /// <param name="logger">The logger.</param>
+        /// <returns>The elements and their frames, in millimetres.</returns>
+        public static Result<IReadOnlyList<PlacedElement>> HarvestPlaced(
+            Document document, HarvestScope scope, ILogger logger)
+        {
+            if (document is null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
+
+            Result<List<ObjectId>> candidates = CollectCandidates(document, scope);
+            if (candidates.IsFailure)
+            {
+                return Result<IReadOnlyList<PlacedElement>>.Failure(candidates.ErrorCode!, candidates.ErrorMessage!);
+            }
+
+            Database database = document.Database;
+            double scale = DrawingUnits.DrawingUnitsPerMillimetre(database.Insunits);
+            ObjectId modelSpaceId = SymbolUtilityServices.GetBlockModelSpaceId(database);
+
+            List<PlacedElement> elements = new(candidates.Value.Count);
+            int unreadable = 0;
+
+            using DocumentLock documentLock = document.LockDocument();
+            using Transaction transaction = database.TransactionManager.StartTransaction();
+
+            foreach (ObjectId objectId in candidates.Value)
+            {
+                if (objectId.IsNull || objectId.IsErased)
+                {
+                    continue;
+                }
+
+                if (transaction.GetObject(objectId, OpenMode.ForRead) is not BlockReference reference)
+                {
+                    continue;
+                }
+
+                if (scope == HarvestScope.ModelSpace && reference.BlockId != modelSpaceId)
+                {
+                    continue;
+                }
+
+                Result<DecodedElement> decoded = MetadataStore.ReadElement(transaction, reference);
+                if (decoded.IsFailure)
+                {
+                    unreadable++;
+                    continue;
+                }
+
+                // The reference's own transform is the truth about where the element is. The
+                // geometry inside the definition is already in drawing units, so only the origin
+                // needs converting back to millimetres.
+                CoordinateSystem3d system = reference.BlockTransform.CoordinateSystem3d;
+                ElementFrame frame = new(
+                    new Vec3(system.Origin.X / scale, system.Origin.Y / scale, system.Origin.Z / scale),
+                    new Vec3(system.Xaxis.X, system.Xaxis.Y, system.Xaxis.Z),
+                    new Vec3(system.Yaxis.X, system.Yaxis.Y, system.Yaxis.Z),
+                    new Vec3(system.Zaxis.X, system.Zaxis.Y, system.Zaxis.Z));
+
+                elements.Add(new PlacedElement(decoded.Value.Definition, frame, reference.Handle.ToString()));
+            }
+
+            transaction.Commit();
+
+            if (unreadable > 0)
+            {
+                logger.Warning(
+                    $"{unreadable} object(s) carried the StructureGen marker but no readable parameters and were " +
+                    "left off the plan.");
+            }
+
+            return Result<IReadOnlyList<PlacedElement>>.Success(elements);
         }
 
         private static Result<List<ObjectId>> CollectCandidates(Document document, HarvestScope scope)
